@@ -15,3 +15,10 @@
     (is (not (contract/exact-import-grant-provider-sets? imports #{}
                                                          {:aiueos-clock-now :provider})))
     (is (not (contract/exact-import-grant-provider-sets? imports imports {})))))
+
+(deftest effectful-world-has-only-named-imports
+  (let [wit (contract/world-wit #{7})]
+    (is (.contains wit "import aiueos-clock-now"))
+    (is (not (.contains wit "wasi:")))
+    (is (= :aiueos.component/aiueos-clock-now
+           (contract/component-import-key 7)))))
