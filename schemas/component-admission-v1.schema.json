@@ -7,7 +7,7 @@
   "required": ["target", "wasi-version", "profile", "imports", "exports", "grants", "provider-bindings", "abilities", "ambient-wasi", "budgets", "identity"],
   "properties": {
     "target": {"const": "wasm-component-kotoba-v1"},
-    "wasi-version": {"const": "0.3"},
+    "wasi-version": {"const": "0.3.0"},
     "profile": {"enum": ["sync", "async"]},
     "imports": {"type": "array", "uniqueItems": true, "maxItems": 256},
     "exports": {"type": "array", "uniqueItems": true, "maxItems": 256},

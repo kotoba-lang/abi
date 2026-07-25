@@ -3,7 +3,7 @@
 
 (def component-world "kotoba:app/kotoba-app@0.1.0")
 (def component-target :wasm-component-kotoba-v1)
-(def wasi-version "0.3")
+(def wasi-version "0.3.0")
 (def ambient-wasi? false)
 
 (def capability-import-names
