@@ -22,3 +22,10 @@
     (is (not (.contains wit "wasi:")))
     (is (= :aiueos.component/aiueos-clock-now
            (contract/component-import-key 7)))))
+
+(deftest abilities-are-exact-and-bounded
+  (let [ability {:target "clock://monotonic" :operation :clock/now
+                 :max-bytes 1 :max-items 1 :deadline-ms 1 :audit-id "test"}]
+    (is (contract/valid-ability? ability))
+    (is (not (contract/valid-ability? (assoc ability :extra true))))
+    (is (not (contract/valid-ability? (assoc ability :deadline-ms 0))))))

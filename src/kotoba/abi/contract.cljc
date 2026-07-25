@@ -18,6 +18,22 @@
 (def capability-imports
   (->> capability-import-names vals (map keyword) set))
 
+(def ability-keys
+  #{:target :operation :max-bytes :max-items :deadline-ms :audit-id})
+
+(defn valid-ability?
+  "Validate the exact, bounded descriptor attached to one named Component
+  import. This is data validation only; a runtime must still enforce the
+  resulting limits at every host boundary."
+  [ability]
+  (and (map? ability)
+       (= ability-keys (set (keys ability)))
+       (string? (:target ability)) (seq (:target ability))
+       (keyword? (:operation ability))
+       (string? (:audit-id ability)) (seq (:audit-id ability))
+       (every? #(pos-int? (get ability %))
+               [:max-bytes :max-items :deadline-ms])))
+
 (defn capability-import-name
   "Resolve a compiler-local capability id to its portable WIT import name.
   Unknown ids are a compile-time error; an adapter must never turn one into a
