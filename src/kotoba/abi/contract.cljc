@@ -121,6 +121,11 @@
     :policy-decision-cid :db-basis :grant-cids :approval-cids
     :runtime-identity :input-cid :outcome-cid :host-receipt-cids})
 
+(def component-authority-event-keys
+  #{:murakumo.component/version :murakumo.component/event
+    :murakumo.component/component-cid :murakumo.component/epoch
+    :murakumo.component/sequence :murakumo.component/node})
+
 (defn- cid? [value]
   (and (string? value) (boolean (re-matches #"b.+" value))))
 
@@ -185,6 +190,23 @@
            (and (nil? (:component-cid identity)) (nil? (:wit-world-cid identity))))
        (or (cid? (:plan-cid identity)) (nil? (:plan-cid identity)))
        (every? cid-vector? ((juxt :grant-cids :approval-cids :host-receipt-cids) identity))))
+
+(defn valid-component-authority-event?
+  "Validate Murakumo's portable placement-fence event. Authentication and
+  replay/order enforcement remain host transport concerns; this exact shape
+  prevents Murakumo and Kototama from independently inventing the wire ABI."
+  [event]
+  (and (map? event)
+       (= component-authority-event-keys (set (keys event)))
+       (= 1 (:murakumo.component/version event))
+       (contains? #{:placed :revoked} (:murakumo.component/event event))
+       (cid? (:murakumo.component/component-cid event))
+       (pos-int? (:murakumo.component/epoch event))
+       (pos-int? (:murakumo.component/sequence event))
+       (let [node (:murakumo.component/node event)]
+         (if (= :placed (:murakumo.component/event event))
+           (and (string? node) (seq node) (<= (count node) 4096))
+           (nil? node)))))
 
 ;; These vectors are intentionally plain EDN-shaped values.  A host may use
 ;; any codec/language, but must obtain the same accept/reject result before it
