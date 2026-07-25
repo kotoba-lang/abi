@@ -1,4 +1,4 @@
-package aiueos:capability@0.2.0;
+package aiueos:capability@0.3.0;
 
 /// A host-owned, non-forgeable authority. There is intentionally no exported
 /// constructor or serialization method. The linker creates one only after
@@ -13,6 +13,18 @@ interface capability {
     deadline,
     audit-unavailable,
     provider-failed,
+  }
+  /// A named request narrows acquisition to one operation. Selecting a name
+  /// does not create authority: the host returns a grant only when that exact
+  /// operation appears in the admitted descriptor.
+  enum grant-request {
+    identity-sign,
+    identity-verify,
+    hash-sha256,
+    http-post,
+    log-read,
+    log-append,
+    clock-now,
   }
   record bytes-request { bytes: list<u8>, }
   record bytes-response { bytes: list<u8>, }
@@ -30,9 +42,10 @@ interface capability {
   record log-read-response { next-cursor: u64, bytes: list<u8>, }
 
   /// The only way a guest obtains a resource representation. The host binds
-  /// the returned handle to one admitted lease and rejects cross-interface,
-  /// expired, revoked, or exhausted use. This is issuance, not a constructor.
-  acquire: func() -> result<own<grant>, denial>;
+  /// the returned handle to the exact admitted named operation and rejects
+  /// unadmitted, cross-interface, expired, revoked, or exhausted use. This is
+  /// issuance, not a constructor.
+  acquire: func(request: grant-request) -> result<own<grant>, denial>;
 }
 
 interface identity {
