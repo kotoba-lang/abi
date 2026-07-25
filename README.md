@@ -39,6 +39,12 @@ compiler → signed Component + declared imports
 - [`schemas/component-admission-v1.schema.json`](schemas/component-admission-v1.schema.json)
   is the closed hand-off envelope that a runtime must validate before invoking
   an engine linker.
+- `kotoba.abi.contract` also owns closed v1 descriptors for a portable plan,
+  basis-bound policy decision, non-bearer capability lease, and immutable
+  execution identity. They are the common receipt contract; concrete host
+  handles remain local and non-serializable.
+- [`schemas/portable-execution-v1.schema.json`](schemas/portable-execution-v1.schema.json)
+  provides the JSON Schema form of those descriptors for non-Clojure consumers.
 - [`90-docs/adr/2607252600-abi-ownership.edn`](90-docs/adr/2607252600-abi-ownership.edn) records
   ownership and dependency rules.
 
