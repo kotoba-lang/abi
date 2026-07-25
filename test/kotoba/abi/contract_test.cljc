@@ -28,6 +28,11 @@
     (is (= :aiueos.component/aiueos-clock-now
            (contract/component-import-key 7)))))
 
+(deftest v2-world-refuses-to-label-a-v1-scalar-effect-as-typed
+  (is (.contains (contract/world-wit-v2 #{}) "package kotoba:app@0.2.0"))
+  (is (thrown? clojure.lang.ExceptionInfo
+               (contract/world-wit-v2 #{7}))))
+
 (deftest abilities-are-exact-and-bounded
   (let [ability {:target "clock://monotonic" :operation :clock/now
                  :max-bytes 1 :max-items 1 :deadline-ms 1 :audit-id "test"}]

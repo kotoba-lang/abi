@@ -3,6 +3,8 @@
 
 (def component-world "kotoba:app/kotoba-app@0.1.0")
 (def component-target :wasm-component-kotoba-v1)
+(def component-world-v2 "kotoba:app/kotoba-app@0.2.0")
+(def component-target-v2 :wasm-component-kotoba-v2)
 (def wasi-version "0.3.0")
 (def ambient-wasi? false)
 
@@ -75,6 +77,19 @@
   (str "package kotoba:app@0.1.0;\n\nworld kotoba-app {\n"
        (apply str (map #(str "  import " (capability-import-name %) ": func(value: s64) -> s64;\n")
                        (sort capability-ids)))
+       "  export main: func() -> s64;\n}\n"))
+
+(defn world-wit-v2
+  "The v2 Component world for a pure application. Effectful v2 lowering uses
+  the typed `aiueos:capability@0.2.0` interfaces and is intentionally rejected
+  until the compiler can materialize host-owned `borrow<grant>` resources.
+  It must never reuse v1 scalar imports under a v2 target label."
+  [capability-ids]
+  (when (seq capability-ids)
+    (throw (ex-info "typed capability WIT v2 lowering is required"
+                    {:phase :component-abi-v2
+                     :capability-ids (set capability-ids)})))
+  (str "package kotoba:app@0.2.0;\n\nworld kotoba-app {\n"
        "  export main: func() -> s64;\n}\n"))
 
 (defn exact-import-grant-provider-sets?
