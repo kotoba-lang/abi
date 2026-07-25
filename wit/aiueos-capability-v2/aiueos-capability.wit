@@ -1,0 +1,66 @@
+package aiueos:capability@0.2.0;
+
+/// A host-owned, non-forgeable authority. There is intentionally no exported
+/// constructor or serialization method. The linker creates one only after
+/// admitting a descriptor and a live lease.
+interface capability {
+  resource grant;
+  /// Every provider call can fail closed without exposing a host exception.
+  enum denial {
+    revoked,
+    expired,
+    quota,
+    deadline,
+    audit-unavailable,
+    provider-failed,
+  }
+  record bytes-request { bytes: list<u8>, }
+  record bytes-response { bytes: list<u8>, }
+  record http-post-request {
+    path: string,
+    headers: list<tuple<string, string>>,
+    body: list<u8>,
+  }
+  record http-post-response {
+    status: u16,
+    headers: list<tuple<string, string>>,
+    body: list<u8>,
+  }
+  record log-read-request { cursor: u64, max-bytes: u32, }
+  record log-read-response { next-cursor: u64, bytes: list<u8>, }
+}
+
+interface identity {
+  use capability.{grant, denial, bytes-request, bytes-response};
+  sign: func(authority: borrow<grant>, request: bytes-request) -> result<bytes-response, denial>;
+  verify: func(authority: borrow<grant>, request: bytes-request) -> result<bool, denial>;
+}
+
+interface hash {
+  use capability.{grant, denial, bytes-request, bytes-response};
+  sha256: func(authority: borrow<grant>, request: bytes-request) -> result<bytes-response, denial>;
+}
+
+interface http {
+  use capability.{grant, denial, http-post-request, http-post-response};
+  post: func(authority: borrow<grant>, request: http-post-request) -> result<http-post-response, denial>;
+}
+
+interface log {
+  use capability.{grant, denial, bytes-request, log-read-request, log-read-response};
+  read: func(authority: borrow<grant>, request: log-read-request) -> result<log-read-response, denial>;
+  append: func(authority: borrow<grant>, request: bytes-request) -> result<_, denial>;
+}
+
+interface clock {
+  use capability.{grant, denial};
+  now: func(authority: borrow<grant>) -> result<u64, denial>;
+}
+
+world providers {
+  export identity;
+  export hash;
+  export http;
+  export log;
+  export clock;
+}
