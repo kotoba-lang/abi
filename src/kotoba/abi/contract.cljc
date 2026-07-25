@@ -185,3 +185,48 @@
            (and (nil? (:component-cid identity)) (nil? (:wit-world-cid identity))))
        (or (cid? (:plan-cid identity)) (nil? (:plan-cid identity)))
        (every? cid-vector? ((juxt :grant-cids :approval-cids :host-receipt-cids) identity))))
+
+;; These vectors are intentionally plain EDN-shaped values.  A host may use
+;; any codec/language, but must obtain the same accept/reject result before it
+;; issues a non-serializable capability handle or invokes an engine.
+(def portable-execution-v1-vectors
+  (let [cid "bafyportablehostcontract"
+        plan {:format :kotoba.plan/v1 :plan-cid cid :code-closure-cid cid
+              :artifact-cid cid :compiler-contract cid :requested-effects #{:audit/append}
+              :requested-resources #{:receipt-log} :input-cid cid :budget {:fuel 1}}
+        decision {:format :kotoba.policy-decision/v1 :decision-cid cid :plan-cid cid
+                  :policy-cid cid :db-basis cid :result :permit :reasons [:within-budget]
+                  :issued-at "2026-07-25T00:00:00Z" :expires-at "2026-07-25T00:01:00Z"}
+        lease {:format :kotoba.capability-lease/v1 :capability-cid cid
+               :execution-identity-cid cid :component-cid cid :resource-cid cid
+               :purpose :audit/append :expires-at "2026-07-25T00:01:00Z"
+               :uses 1 :transfer :non-transferable :delegation-depth 0}
+        identity {:format :kotoba.execution-identity/v1 :plan-cid cid
+                  :code-closure-cid cid :artifact-cid cid :compiler-contract cid
+                  :component-cid cid :wit-world-cid cid :package-lock-cid cid
+                  :policy-cid cid :policy-decision-cid cid :db-basis cid
+                  :grant-cids [cid] :approval-cids [] :runtime-identity cid
+                  :input-cid cid :outcome-cid cid :host-receipt-cids [cid]}]
+    [{:id :plan/valid :kind :plan :expect :accept :value plan}
+     {:id :plan/unknown-field :kind :plan :expect :reject :value (assoc plan :ambient true)}
+     {:id :decision/valid :kind :policy-decision :expect :accept :value decision}
+     {:id :decision/invalid-result :kind :policy-decision :expect :reject
+      :value (assoc decision :result :maybe)}
+     {:id :lease/non-bearer :kind :capability-lease :expect :accept :value lease}
+     {:id :lease/forged-handle :kind :capability-lease :expect :reject
+      :value (assoc lease :host-handle "42")}
+     {:id :identity/valid-component :kind :execution-identity :expect :accept :value identity}
+     {:id :identity/partial-component :kind :execution-identity :expect :reject
+      :value (assoc identity :wit-world-cid nil)}]))
+
+(defn conformance-result
+  "Return the schema-level result for one `portable-execution-v1-vectors`
+  entry. Engine hosts add their own component/lease lifecycle checks after
+  this shared descriptor gate."
+  [{:keys [kind value]}]
+  (case kind
+    :plan (valid-plan? value)
+    :policy-decision (valid-policy-decision? value)
+    :capability-lease (valid-capability-lease? value)
+    :execution-identity (valid-execution-identity? value)
+    false))

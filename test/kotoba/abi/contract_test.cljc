@@ -66,3 +66,7 @@
     (is (not (contract/valid-capability-lease? (assoc lease :host-handle "42"))))
     (is (not (contract/valid-execution-identity? (assoc identity :wit-world-cid nil))))
     (is (not (contract/valid-policy-decision? (assoc decision :result :maybe))))))
+
+(deftest portable-host-conformance-vectors-have-one-portable-outcome
+  (doseq [{:keys [id expect] :as vector} contract/portable-execution-v1-vectors]
+    (is (= (= :accept expect) (contract/conformance-result vector)) (name id))))
