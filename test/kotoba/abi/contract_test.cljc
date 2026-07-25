@@ -33,6 +33,15 @@
   (is (thrown? clojure.lang.ExceptionInfo
                (contract/world-wit-v2 #{7}))))
 
+#?(:clj
+   (deftest authoritative-v3-wit-is-published-to-compiler-consumers
+     (let [wit (contract/typed-capability-wit-v3)]
+       (is (= "aiueos:capability/application@0.3.0"
+              contract/typed-capability-world-v3))
+       (is (.contains wit "package aiueos:capability@0.3.0"))
+       (is (.contains wit "acquire: func(request: grant-request)"))
+       (is (not (.contains wit "wasi:"))))))
+
 (deftest abilities-are-exact-and-bounded
   (let [ability {:target "clock://monotonic" :operation :clock/now
                  :max-bytes 1 :max-items 1 :deadline-ms 1 :audit-id "test"}]

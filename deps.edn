@@ -1,2 +1,2 @@
-{:paths ["src" "test"]
+{:paths ["src" "test" "wit"]
  :aliases {:test {:main-opts ["-m" "kotoba.abi.test-runner"]}}}
