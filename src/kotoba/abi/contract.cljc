@@ -81,18 +81,20 @@
                        (sort capability-ids)))
        "  export main: func() -> s64;\n}\n"))
 
+#?(:clj (declare typed-capability-wit-v3))
+
 (defn world-wit-v2
-  "The v2 Component world for a pure application. Effectful v2 lowering uses
-  the typed `aiueos:capability@0.2.0` interfaces and is intentionally rejected
-  until the compiler can materialize host-owned `borrow<grant>` resources.
-  It must never reuse v1 scalar imports under a v2 target label."
+  "Render the pure v2 world, or return the authoritative v0.3 capability world
+  for an effectful JVM compiler/runtime consumer. It never reuses v1 scalar
+  imports under a v2 target label."
   [capability-ids]
-  (when (seq capability-ids)
-    (throw (ex-info "typed capability WIT v2 lowering is required"
-                    {:phase :component-abi-v2
-                     :capability-ids (set capability-ids)})))
-  (str "package kotoba:app@0.2.0;\n\nworld kotoba-app {\n"
-       "  export main: func() -> s64;\n}\n"))
+  (if (seq capability-ids)
+    #?(:clj (typed-capability-wit-v3)
+       :cljs (throw (ex-info "typed capability WIT source is JVM-only"
+                             {:phase :component-abi-v3
+                              :capability-ids (set capability-ids)})))
+    (str "package kotoba:app@0.2.0;\n\nworld kotoba-app {\n"
+         "  export main: func() -> s64;\n}\n")))
 
 #?(:clj
    (defn typed-capability-wit-v3

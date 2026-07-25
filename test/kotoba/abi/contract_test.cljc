@@ -28,10 +28,14 @@
     (is (= :aiueos.component/aiueos-clock-now
            (contract/component-import-key 7)))))
 
-(deftest v2-world-refuses-to-label-a-v1-scalar-effect-as-typed
+(deftest v2-world-never-labels-an-effect-as-a-v1-scalar-import
   (is (.contains (contract/world-wit-v2 #{}) "package kotoba:app@0.2.0"))
-  (is (thrown? clojure.lang.ExceptionInfo
-               (contract/world-wit-v2 #{7}))))
+  #?(:clj
+     (let [wit (contract/world-wit-v2 #{7})]
+       (is (.contains wit "package aiueos:capability@0.3.0"))
+       (is (not (.contains wit "import aiueos-clock-now: func(value: s64)"))))
+     :cljs
+     (is (thrown? js/Error (contract/world-wit-v2 #{7})))))
 
 #?(:clj
    (deftest authoritative-v3-wit-is-published-to-compiler-consumers
