@@ -56,6 +56,12 @@ contract.  In particular, the compiler never imports the aiueos kernel;
 Kototama never decides grants; and Murakumo never receives a provider handle or
 secret merely because it placed a component.
 
+Murakumo placement fencing uses
+`kotoba.abi.contract/valid-component-authority-event?`: an exact versioned
+Component CID, epoch, sequence, event kind, and optional placement node.
+Murakumo owns epoch advancement; Kototama authenticates, orders, and consumes
+the events before named provider calls.
+
 New shared code earns a separate repository only when it has two or more
 independent consumers and can remain below this authority boundary.  Examples
 include generated WIT bindings or canonical artifact codecs.  Policy, engine,

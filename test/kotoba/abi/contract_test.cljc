@@ -70,3 +70,18 @@
 (deftest portable-host-conformance-vectors-have-one-portable-outcome
   (doseq [{:keys [id expect] :as vector} contract/portable-execution-v1-vectors]
     (is (= (= :accept expect) (contract/conformance-result vector)) (name id))))
+
+(deftest component-authority-events-have-one-exact-wire-shape
+  (let [event {:murakumo.component/version 1
+               :murakumo.component/event :revoked
+               :murakumo.component/component-cid cid
+               :murakumo.component/epoch 2
+               :murakumo.component/sequence 3
+               :murakumo.component/node nil}]
+    (is (contract/valid-component-authority-event? event))
+    (is (not (contract/valid-component-authority-event?
+              (assoc event :murakumo.component/epoch 0))))
+    (is (not (contract/valid-component-authority-event?
+              (assoc event :ambient-authority true))))
+    (is (not (contract/valid-component-authority-event?
+              (assoc event :murakumo.component/event :placed))))))
