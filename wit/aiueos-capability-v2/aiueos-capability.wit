@@ -69,3 +69,15 @@ world providers {
   export log;
   export clock;
 }
+
+/// The world imported by a Kotoba application Component. A compiler emits a
+/// subset of these interfaces only when it can lower `acquire` and typed calls.
+world application {
+  import capability;
+  import identity;
+  import hash;
+  import http;
+  import log;
+  import clock;
+  export main: func() -> s64;
+}
