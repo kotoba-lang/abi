@@ -4,7 +4,7 @@
   "title": "Kotoba Component admission envelope v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["target", "wasi-version", "profile", "imports", "exports", "grants", "provider-bindings", "abilities", "ambient-wasi", "budgets", "identity"],
+  "required": ["target", "wasi-version", "profile", "imports", "exports", "grants", "provider-bindings", "abilities", "runtime-bindings", "ambient-wasi", "budgets", "identity"],
   "properties": {
     "target": {"const": "wasm-component-kotoba-v1"},
     "wasi-version": {"const": "0.3.0"},
@@ -14,6 +14,10 @@
     "grants": {"type": "array", "uniqueItems": true, "maxItems": 256},
     "provider-bindings": {"type": "object", "maxProperties": 256},
     "abilities": {"type": "object", "maxProperties": 256},
+    "runtime-bindings": {
+      "type": "object", "additionalProperties": false,
+      "properties": {"component-host-sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+    },
     "ambient-wasi": {"const": false},
     "budgets": {"type": "object"},
     "identity": {
@@ -26,5 +30,10 @@
         "definition-cids": {"type": "array", "minItems": 1, "maxItems": 1024, "items": {"type": "string", "pattern": "^b"}, "uniqueItems": true}
       }
     }
-  }
+  },
+  "allOf": [{
+    "if": {"properties": {"imports": {"minItems": 1}}},
+    "then": {"properties": {"runtime-bindings": {"required": ["component-host-sha256"]}}},
+    "else": {"properties": {"runtime-bindings": {"maxProperties": 0}}}
+  }]
 }

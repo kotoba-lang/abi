@@ -28,9 +28,45 @@
     (is (= :aiueos.component/aiueos-clock-now
            (contract/component-import-key 7)))))
 
+(deftest v2-world-refuses-to-label-a-v1-scalar-effect-as-typed
+  (is (.contains (contract/world-wit-v2 #{}) "package kotoba:app@0.2.0"))
+  (is (thrown? clojure.lang.ExceptionInfo
+               (contract/world-wit-v2 #{7}))))
+
 (deftest abilities-are-exact-and-bounded
   (let [ability {:target "clock://monotonic" :operation :clock/now
                  :max-bytes 1 :max-items 1 :deadline-ms 1 :audit-id "test"}]
     (is (contract/valid-ability? ability))
     (is (not (contract/valid-ability? (assoc ability :extra true))))
     (is (not (contract/valid-ability? (assoc ability :deadline-ms 0))))))
+
+(def cid "bafyportablehostcontract")
+
+(deftest portable-host-descriptors-are-closed-and-bound
+  (let [plan {:format :kotoba.plan/v1 :plan-cid cid :code-closure-cid cid
+              :artifact-cid cid :compiler-contract cid :requested-effects #{:audit/append}
+              :requested-resources #{:receipt-log} :input-cid cid :budget {:fuel 1}}
+        decision {:format :kotoba.policy-decision/v1 :decision-cid cid :plan-cid cid
+                  :policy-cid cid :db-basis cid :result :permit :reasons [:within-budget]
+                  :issued-at "2026-07-25T00:00:00Z" :expires-at "2026-07-25T00:01:00Z"}
+        lease {:format :kotoba.capability-lease/v1 :capability-cid cid
+               :execution-identity-cid cid :component-cid cid :resource-cid cid
+               :purpose :audit/append :expires-at "2026-07-25T00:01:00Z"
+               :uses 1 :transfer :non-transferable :delegation-depth 0}
+        identity {:format :kotoba.execution-identity/v1 :plan-cid cid
+                  :code-closure-cid cid :artifact-cid cid :compiler-contract cid
+                  :component-cid cid :wit-world-cid cid :package-lock-cid cid
+                  :policy-cid cid :policy-decision-cid cid :db-basis cid
+                  :grant-cids [cid] :approval-cids [] :runtime-identity cid
+                  :input-cid cid :outcome-cid cid :host-receipt-cids [cid]}]
+    (is (contract/valid-plan? plan))
+    (is (contract/valid-policy-decision? decision))
+    (is (contract/valid-capability-lease? lease))
+    (is (contract/valid-execution-identity? identity))
+    (is (not (contract/valid-capability-lease? (assoc lease :host-handle "42"))))
+    (is (not (contract/valid-execution-identity? (assoc identity :wit-world-cid nil))))
+    (is (not (contract/valid-policy-decision? (assoc decision :result :maybe))))))
+
+(deftest portable-host-conformance-vectors-have-one-portable-outcome
+  (doseq [{:keys [id expect] :as vector} contract/portable-execution-v1-vectors]
+    (is (= (= :accept expect) (contract/conformance-result vector)) (name id))))
