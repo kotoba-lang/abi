@@ -6,6 +6,27 @@
 (def wasi-version "0.3.0")
 (def ambient-wasi? false)
 
+;; Admission is intentionally an ABI concern: every compiler and runtime
+;; adapter must agree on this envelope before a Component is linked. Identity
+;; verification and concrete engine execution remain local runtime concerns.
+(def admission-keys
+  #{:target :wasi-version :profile :imports :exports :grants
+    :provider-bindings :abilities :ambient-wasi :budgets :identity})
+
+(def component-profiles
+  {:sync {:required-budgets [:fuel :memory-pages]}
+   :async {:required-budgets [:fuel :memory-pages :deadline-ms :max-items :max-bytes]
+           :cancellation :required}})
+
+(defn profile? [profile]
+  (contains? component-profiles profile))
+
+(defn required-budget-keys [profile]
+  (get-in component-profiles [profile :required-budgets]))
+
+(defn cancellation-required? [profile]
+  (= :required (get-in component-profiles [profile :cancellation])))
+
 (def capability-import-names
   {1 "aiueos-identity-sign"
    2 "aiueos-identity-verify"

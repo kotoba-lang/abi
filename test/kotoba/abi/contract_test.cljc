@@ -6,6 +6,10 @@
   (is (= "kotoba:app/kotoba-app@0.1.0" contract/component-world))
   (is (= :wasm-component-kotoba-v1 contract/component-target))
   (is (= "0.3.0" contract/wasi-version))
+  (is (contract/profile? :sync))
+  (is (contract/cancellation-required? :async))
+  (is (= [:fuel :memory-pages]
+         (contract/required-budget-keys :sync)))
   (is (= "aiueos-clock-now" (get contract/capability-import-names 7)))
   (is (false? contract/ambient-wasi?)))
 
