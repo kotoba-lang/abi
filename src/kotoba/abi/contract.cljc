@@ -11,7 +11,7 @@
 ;; verification and concrete engine execution remain local runtime concerns.
 (def admission-keys
   #{:target :wasi-version :profile :imports :exports :grants
-    :provider-bindings :abilities :ambient-wasi :budgets :identity})
+    :provider-bindings :abilities :runtime-bindings :ambient-wasi :budgets :identity})
 
 (def component-profiles
   {:sync {:required-budgets [:fuel :memory-pages]}
