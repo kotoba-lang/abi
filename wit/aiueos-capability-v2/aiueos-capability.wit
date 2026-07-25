@@ -28,6 +28,11 @@ interface capability {
   }
   record log-read-request { cursor: u64, max-bytes: u32, }
   record log-read-response { next-cursor: u64, bytes: list<u8>, }
+
+  /// The only way a guest obtains a resource representation. The host binds
+  /// the returned handle to one admitted lease and rejects cross-interface,
+  /// expired, revoked, or exhausted use. This is issuance, not a constructor.
+  acquire: func() -> result<own<grant>, denial>;
 }
 
 interface identity {
