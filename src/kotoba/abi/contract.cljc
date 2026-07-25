@@ -1,9 +1,11 @@
 (ns kotoba.abi.contract
-  "Small, dependency-free constants shared by generated ABI consumers.")
+  "Small, dependency-free constants shared by generated ABI consumers."
+  #?(:clj (:require [clojure.java.io :as io])))
 
 (def component-world "kotoba:app/kotoba-app@0.1.0")
 (def component-target :wasm-component-kotoba-v1)
 (def component-world-v2 "kotoba:app/kotoba-app@0.2.0")
+(def typed-capability-world-v3 "aiueos:capability/application@0.3.0")
 (def component-target-v2 :wasm-component-kotoba-v2)
 (def wasi-version "0.3.0")
 (def ambient-wasi? false)
@@ -91,6 +93,18 @@
                      :capability-ids (set capability-ids)})))
   (str "package kotoba:app@0.2.0;\n\nworld kotoba-app {\n"
        "  export main: func() -> s64;\n}\n"))
+
+#?(:clj
+   (defn typed-capability-wit-v3
+     "Return the authoritative typed capability WIT bytes from this pinned ABI
+     dependency. Compiler consumers must copy this exact source into their
+     temporary package graph instead of maintaining a hand-written mirror."
+     []
+     (let [resource (io/resource "aiueos-capability-v2/aiueos-capability.wit")]
+       (when-not resource
+         (throw (ex-info "authoritative typed capability WIT is unavailable"
+                         {:phase :component-abi-v3})))
+       (slurp resource))))
 
 (defn exact-import-grant-provider-sets?
   "True only when declared imports, grants, and provider binding keys agree.
