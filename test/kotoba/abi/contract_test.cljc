@@ -11,7 +11,20 @@
   (is (= [:fuel :memory-pages]
          (contract/required-budget-keys :sync)))
   (is (= "aiueos-clock-now" (get contract/capability-import-names 7)))
+  (is (= "aiueos-object-compare-and-set-ref"
+         (get contract/capability-import-names 11)))
   (is (false? contract/ambient-wasi?)))
+
+(deftest task-stream-bytes-contract-is-bounded-and-cancellable
+  (is (= :poll-cancel (:task contract/stream-contract)))
+  (is (= :pull-cancel (:stream contract/stream-contract)))
+  (is (false? (:ambient-executor? contract/stream-contract)))
+  (is (contract/valid-stream-limits?
+       {:deadline-ms 1000 :max-items 64 :max-bytes 2097152}))
+  (is (not (contract/valid-stream-limits?
+            {:deadline-ms 1000 :max-items 64 :max-bytes 0})))
+  (is (not (contract/valid-stream-limits?
+            {:deadline-ms 1000 :max-items 64 :max-bytes 1 :ambient true}))))
 
 (deftest import-grant-provider-invariant-is-exact
   (let [imports #{:aiueos-clock-now}]
@@ -28,10 +41,27 @@
     (is (= :aiueos.component/aiueos-clock-now
            (contract/component-import-key 7)))))
 
-(deftest v2-world-refuses-to-label-a-v1-scalar-effect-as-typed
+(deftest v2-world-never-labels-an-effect-as-a-v1-scalar-import
   (is (.contains (contract/world-wit-v2 #{}) "package kotoba:app@0.2.0"))
-  (is (thrown? clojure.lang.ExceptionInfo
-               (contract/world-wit-v2 #{7}))))
+  #?(:clj
+     (let [wit (contract/world-wit-v2 #{7})]
+       (is (.contains wit "package aiueos:capability@0.3.0"))
+       (is (not (.contains wit "import aiueos-clock-now: func(value: s64)"))))
+     :cljs
+     (is (thrown? js/Error (contract/world-wit-v2 #{7})))))
+
+#?(:clj
+   (deftest authoritative-v3-wit-is-published-to-compiler-consumers
+     (let [wit (contract/typed-capability-wit-v3)]
+       (is (= "aiueos:capability/application@0.3.0"
+              contract/typed-capability-world-v3))
+       (is (.contains wit "package aiueos:capability@0.3.0"))
+       (is (.contains wit "acquire: func(request: grant-request)"))
+       (is (.contains wit "resource bytes-task"))
+       (is (.contains wit "resource bytes-stream"))
+       (is (.contains wit "get-stream: func"))
+       (is (.contains wit "compare-and-set-ref: func"))
+       (is (not (.contains wit "wasi:"))))))
 
 (deftest abilities-are-exact-and-bounded
   (let [ability {:target "clock://monotonic" :operation :clock/now

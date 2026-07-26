@@ -1,9 +1,11 @@
 (ns kotoba.abi.contract
-  "Small, dependency-free constants shared by generated ABI consumers.")
+  "Small, dependency-free constants shared by generated ABI consumers."
+  #?(:clj (:require [clojure.java.io :as io])))
 
 (def component-world "kotoba:app/kotoba-app@0.1.0")
 (def component-target :wasm-component-kotoba-v1)
 (def component-world-v2 "kotoba:app/kotoba-app@0.2.0")
+(def typed-capability-world-v3 "aiueos:capability/application@0.3.0")
 (def component-target-v2 :wasm-component-kotoba-v2)
 (def wasi-version "0.3.0")
 (def ambient-wasi? false)
@@ -36,7 +38,26 @@
    4 "aiueos-http-post"
    5 "aiueos-log-read"
    6 "aiueos-log-append"
-   7 "aiueos-clock-now"})
+   7 "aiueos-clock-now"
+   8 "aiueos-http-get-stream"
+   9 "aiueos-object-get-stream"
+   10 "aiueos-object-put-block"
+   11 "aiueos-object-compare-and-set-ref"})
+
+(def stream-contract
+  {:format :kotoba.stream/bytes-v1
+   :task :poll-cancel
+   :stream :pull-cancel
+   :required-limits #{:deadline-ms :max-items :max-bytes}
+   :zero-copy? false
+   :ambient-executor? false})
+
+(defn valid-stream-limits?
+  [limits]
+  (and (map? limits)
+       (= #{:deadline-ms :max-items :max-bytes} (set (keys limits)))
+       (every? #(pos-int? (get limits %))
+               [:deadline-ms :max-items :max-bytes])))
 
 (def capability-imports
   (->> capability-import-names vals (map keyword) set))
@@ -79,18 +100,32 @@
                        (sort capability-ids)))
        "  export main: func() -> s64;\n}\n"))
 
+#?(:clj (declare typed-capability-wit-v3))
+
 (defn world-wit-v2
-  "The v2 Component world for a pure application. Effectful v2 lowering uses
-  the typed `aiueos:capability@0.2.0` interfaces and is intentionally rejected
-  until the compiler can materialize host-owned `borrow<grant>` resources.
-  It must never reuse v1 scalar imports under a v2 target label."
+  "Render the pure v2 world, or return the authoritative v0.3 capability world
+  for an effectful JVM compiler/runtime consumer. It never reuses v1 scalar
+  imports under a v2 target label."
   [capability-ids]
-  (when (seq capability-ids)
-    (throw (ex-info "typed capability WIT v2 lowering is required"
-                    {:phase :component-abi-v2
-                     :capability-ids (set capability-ids)})))
-  (str "package kotoba:app@0.2.0;\n\nworld kotoba-app {\n"
-       "  export main: func() -> s64;\n}\n"))
+  (if (seq capability-ids)
+    #?(:clj (typed-capability-wit-v3)
+       :cljs (throw (ex-info "typed capability WIT source is JVM-only"
+                             {:phase :component-abi-v3
+                              :capability-ids (set capability-ids)})))
+    (str "package kotoba:app@0.2.0;\n\nworld kotoba-app {\n"
+         "  export main: func() -> s64;\n}\n")))
+
+#?(:clj
+   (defn typed-capability-wit-v3
+     "Return the authoritative typed capability WIT bytes from this pinned ABI
+     dependency. Compiler consumers must copy this exact source into their
+     temporary package graph instead of maintaining a hand-written mirror."
+     []
+     (let [resource (io/resource "aiueos-capability-v2/aiueos-capability.wit")]
+       (when-not resource
+         (throw (ex-info "authoritative typed capability WIT is unavailable"
+                         {:phase :component-abi-v3})))
+       (slurp resource))))
 
 (defn exact-import-grant-provider-sets?
   "True only when declared imports, grants, and provider binding keys agree.
