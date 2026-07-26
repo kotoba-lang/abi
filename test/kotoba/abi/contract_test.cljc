@@ -138,3 +138,28 @@
               (assoc envelope :signature "00"))))
     (is (not (contract/valid-component-authority-envelope?
               (assoc envelope :public-key "self-asserted"))))))
+
+;; The Application Profile capabilities (ADR-2607201300) need portable import
+;; names for the compiler to be able to EMIT a component that imports them --
+;; without a name `capability-import-name` throws and an application whose only
+;; effects are state/ui/llm/storage cannot be compiled at all. A name is not a
+;; runtime claim: these ids are deliberately absent from the v0.3
+;; `grant-request` enum, because no host implements them yet.
+(deftest application-profile-capabilities-have-portable-import-names
+  (is (= {8 "aiueos-state-transact"
+          9 "aiueos-ui-commit"
+          10 "aiueos-ui-next-event"
+          11 "aiueos-llm-generate"
+          12 "aiueos-storage-transact"}
+         (select-keys contract/capability-import-names [8 9 10 11 12])))
+  (is (= :aiueos.component/aiueos-llm-generate (contract/component-import-key 11)))
+  ;; Streams and linear resources stay unnamed on purpose: a name would promise
+  ;; a lowering the Canonical ABI path does not have.
+  (doseq [id [13 14 15 16]]
+    (is (thrown? #?(:clj clojure.lang.ExceptionInfo :cljs js/Error)
+                 (contract/capability-import-name id))
+        (str "capability " id " must not claim a portable import name yet")))
+  ;; Every name stays unique, so no two capabilities can collide onto one
+  ;; component import key.
+  (let [names (vals contract/capability-import-names)]
+    (is (= (count names) (count (distinct names))))))

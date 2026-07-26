@@ -31,6 +31,26 @@
 (defn cancellation-required? [profile]
   (= :required (get-in component-profiles [profile :cancellation])))
 
+;; Ids 1-7 are the operations `aiueos:capability@0.3.0` (wit/aiueos-capability-v2)
+;; defines as `grant-request` cases and that a runtime host can execute today.
+;;
+;; Ids 8-12 are the Application Profile capabilities (ADR-2607201300;
+;; `kotoba/lang/component-model-v1.edn` in kotoba-component declares the same
+;; ids, interfaces, and function names). Naming them here is what lets the
+;; compiler EMIT a component that imports them -- without a name,
+;; `capability-import-name` throws and an application whose only effects are
+;; state/ui/llm/storage cannot be compiled at all, which is how the profile
+;; stayed unreachable from `.kotoba` source.
+;;
+;; A name is not a runtime claim. These five are deliberately NOT `grant-request`
+;; cases in the v0.3 WIT: no host implements them yet, so a component importing
+;; them links only against a provider that supplies the matching
+;; `kotoba:application/<interface>@1` function. Adding a case to the enum is the
+;; separate, larger P1 work ADR-2607252500 tracks.
+;;
+;; Ids 13-16 (`http/get-stream`, `object/*`) stay unnamed on purpose: their
+;; request/result types are streams and linear resources, not scalars, so a name
+;; would promise a lowering the Canonical ABI path does not yet have.
 (def capability-import-names
   {1 "aiueos-identity-sign"
    2 "aiueos-identity-verify"
@@ -38,7 +58,12 @@
    4 "aiueos-http-post"
    5 "aiueos-log-read"
    6 "aiueos-log-append"
-   7 "aiueos-clock-now"})
+   7 "aiueos-clock-now"
+   8 "aiueos-state-transact"
+   9 "aiueos-ui-commit"
+   10 "aiueos-ui-next-event"
+   11 "aiueos-llm-generate"
+   12 "aiueos-storage-transact"})
 
 (def capability-imports
   (->> capability-import-names vals (map keyword) set))
