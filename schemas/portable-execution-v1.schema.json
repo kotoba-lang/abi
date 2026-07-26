@@ -41,6 +41,21 @@
         "delegation-depth": {"type": "integer", "minimum": 0}
       }
     },
+    "approval": {
+      "type": "object", "additionalProperties": false,
+      "required": ["format", "approval-cid", "plan-cid", "policy-cid", "db-basis", "resources", "input-cid", "approver-cid", "issued-at", "expires-at"],
+      "properties": {
+        "format": {"const": "kotoba.approval/v1"},
+        "approval-cid": {"$ref": "#/$defs/cid"}, "plan-cid": {"$ref": "#/$defs/cid"},
+        "policy-cid": {"$ref": "#/$defs/cid"}, "db-basis": {"$ref": "#/$defs/cid"},
+        "resources": {
+          "type": "array",
+          "uniqueItems": true, "minItems": 1, "maxItems": 256
+        },
+        "input-cid": {"$ref": "#/$defs/cid"}, "approver-cid": {"$ref": "#/$defs/cid"},
+        "issued-at": {"type": "string"}, "expires-at": {"type": "string"}
+      }
+    },
     "execution-identity": {
       "type": "object", "additionalProperties": false,
       "required": ["format", "plan-cid", "code-closure-cid", "artifact-cid", "compiler-contract", "component-cid", "wit-world-cid", "package-lock-cid", "policy-cid", "policy-decision-cid", "db-basis", "grant-cids", "approval-cids", "runtime-identity", "input-cid", "outcome-cid", "host-receipt-cids"],

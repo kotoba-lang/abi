@@ -53,6 +53,11 @@
                :execution-identity-cid cid :component-cid cid :resource-cid cid
                :purpose :audit/append :expires-at "2026-07-25T00:01:00Z"
                :uses 1 :transfer :non-transferable :delegation-depth 0}
+        approval {:format :kotoba.approval/v1 :approval-cid cid :plan-cid cid
+                  :policy-cid cid :db-basis cid :resources #{:receipt-log}
+                  :input-cid cid :approver-cid cid
+                  :issued-at "2026-07-25T00:00:00Z"
+                  :expires-at "2026-07-25T00:01:00Z"}
         identity {:format :kotoba.execution-identity/v1 :plan-cid cid
                   :code-closure-cid cid :artifact-cid cid :compiler-contract cid
                   :component-cid cid :wit-world-cid cid :package-lock-cid cid
@@ -62,8 +67,10 @@
     (is (contract/valid-plan? plan))
     (is (contract/valid-policy-decision? decision))
     (is (contract/valid-capability-lease? lease))
+    (is (contract/valid-approval? approval))
     (is (contract/valid-execution-identity? identity))
     (is (not (contract/valid-capability-lease? (assoc lease :host-handle "42"))))
+    (is (not (contract/valid-approval? (assoc approval :runtime-prompt true))))
     (is (not (contract/valid-execution-identity? (assoc identity :wit-world-cid nil))))
     (is (not (contract/valid-policy-decision? (assoc decision :result :maybe))))))
 
@@ -113,7 +120,7 @@
                     (case field
                       :issued-at-ms inc
                       :event #(update % :murakumo.component/epoch inc)
-                      #(str % "-tampered"))))))))
+                      #(str % "-tampered")))))))
     (is (not (contract/valid-component-authority-envelope?
               (assoc envelope :signature "00"))))
     (is (not (contract/valid-component-authority-envelope?
