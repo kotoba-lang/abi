@@ -85,3 +85,36 @@
               (assoc event :ambient-authority true))))
     (is (not (contract/valid-component-authority-event?
               (assoc event :murakumo.component/event :placed))))))
+
+(deftest component-authority-signatures-cover-issuer-audience-and-event
+  (let [event {:murakumo.component/version 1
+               :murakumo.component/event :revoked
+               :murakumo.component/component-cid cid
+               :murakumo.component/epoch 2
+               :murakumo.component/sequence 3
+               :murakumo.component/node nil}
+        envelope {:format :murakumo.component-authority/v1
+                  :algorithm :ed25519
+                  :key-id "murakumo-2026-01"
+                  :issuer "did:key:murakumo"
+                  :audience "did:key:kototama-edge-a"
+                  :issued-at-ms 1785000000000
+                  :event event
+                  :signature (apply str (repeat 128 "a"))}]
+    (is (contract/valid-component-authority-envelope? envelope))
+    (is (= (contract/component-authority-signing-payload envelope)
+           (contract/component-authority-signing-payload
+            (into (sorted-map) envelope))))
+    (doseq [field [:issuer :audience :issued-at-ms :event]]
+      (is (not=
+           (contract/component-authority-signing-payload envelope)
+           (contract/component-authority-signing-payload
+            (update envelope field
+                    (case field
+                      :issued-at-ms inc
+                      :event #(update % :murakumo.component/epoch inc)
+                      #(str % "-tampered"))))))))
+    (is (not (contract/valid-component-authority-envelope?
+              (assoc envelope :signature "00"))))
+    (is (not (contract/valid-component-authority-envelope?
+              (assoc envelope :public-key "self-asserted"))))))
