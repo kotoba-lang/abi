@@ -115,6 +115,10 @@
   #{:format :capability-cid :execution-identity-cid :component-cid :resource-cid
     :purpose :expires-at :uses :transfer :delegation-depth})
 
+(def approval-keys
+  #{:format :approval-cid :plan-cid :policy-cid :db-basis :resources
+    :input-cid :approver-cid :issued-at :expires-at})
+
 (def execution-identity-keys
   #{:format :plan-cid :code-closure-cid :artifact-cid :compiler-contract
     :component-cid :wit-world-cid :package-lock-cid :policy-cid
@@ -177,6 +181,21 @@
        (pos-int? (:uses lease))
        (contains? #{:non-transferable :same-component} (:transfer lease))
        (nat-int? (:delegation-depth lease))))
+
+(defn valid-approval?
+  "Validate an immutable human/organizational approval witness. An approval is
+  authority only for the exact plan, policy, basis, input and resource set it
+  names; a host must additionally verify its CID, signer and expiry."
+  [approval]
+  (and (map? approval)
+       (= approval-keys (set (keys approval)))
+       (= :kotoba.approval/v1 (:format approval))
+       (every? cid? ((juxt :approval-cid :plan-cid :policy-cid :db-basis
+                            :input-cid :approver-cid) approval))
+       (set? (:resources approval))
+       (seq (:resources approval))
+       (string? (:issued-at approval))
+       (string? (:expires-at approval))))
 
 (defn valid-execution-identity?
   "Validate the immutable identity shared by compiler, authority, runtime and
@@ -256,6 +275,11 @@
                :execution-identity-cid cid :component-cid cid :resource-cid cid
                :purpose :audit/append :expires-at "2026-07-25T00:01:00Z"
                :uses 1 :transfer :non-transferable :delegation-depth 0}
+        approval {:format :kotoba.approval/v1 :approval-cid cid :plan-cid cid
+                  :policy-cid cid :db-basis cid :resources #{:receipt-log}
+                  :input-cid cid :approver-cid cid
+                  :issued-at "2026-07-25T00:00:00Z"
+                  :expires-at "2026-07-25T00:01:00Z"}
         identity {:format :kotoba.execution-identity/v1 :plan-cid cid
                   :code-closure-cid cid :artifact-cid cid :compiler-contract cid
                   :component-cid cid :wit-world-cid cid :package-lock-cid cid
@@ -270,6 +294,9 @@
      {:id :lease/non-bearer :kind :capability-lease :expect :accept :value lease}
      {:id :lease/forged-handle :kind :capability-lease :expect :reject
       :value (assoc lease :host-handle "42")}
+     {:id :approval/valid :kind :approval :expect :accept :value approval}
+     {:id :approval/policy-substitution :kind :approval :expect :reject
+      :value (assoc approval :policy-cid nil)}
      {:id :identity/valid-component :kind :execution-identity :expect :accept :value identity}
      {:id :identity/partial-component :kind :execution-identity :expect :reject
       :value (assoc identity :wit-world-cid nil)}]))
@@ -283,5 +310,6 @@
     :plan (valid-plan? value)
     :policy-decision (valid-policy-decision? value)
     :capability-lease (valid-capability-lease? value)
+    :approval (valid-approval? value)
     :execution-identity (valid-execution-identity? value)
     false))
