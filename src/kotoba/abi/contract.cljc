@@ -126,6 +126,10 @@
     :murakumo.component/component-cid :murakumo.component/epoch
     :murakumo.component/sequence :murakumo.component/node})
 
+(def component-authority-envelope-keys
+  #{:format :algorithm :key-id :issuer :audience :issued-at-ms
+    :event :signature})
+
 (defn- cid? [value]
   (and (string? value) (boolean (re-matches #"b.+" value))))
 
@@ -207,6 +211,35 @@
          (if (= :placed (:murakumo.component/event event))
            (and (string? node) (seq node) (<= (count node) 4096))
            (nil? node)))))
+
+(defn component-authority-signing-payload
+  "Canonical, language-portable value covered by an authority signature.
+  It is a vector rather than a map so map iteration order cannot change bytes."
+  [{:keys [format algorithm key-id issuer audience issued-at-ms event]}]
+  (pr-str
+   [format algorithm key-id issuer audience issued-at-ms
+    [(:murakumo.component/version event)
+     (:murakumo.component/event event)
+     (:murakumo.component/component-cid event)
+     (:murakumo.component/epoch event)
+     (:murakumo.component/sequence event)
+     (:murakumo.component/node event)]]))
+
+(defn valid-component-authority-envelope?
+  "Validate the exact signed Murakumo-to-Kototama envelope. Public-key trust,
+  signature verification, clock skew, and replay enforcement are runtime
+  responsibilities performed after this shared shape gate."
+  [envelope]
+  (and (map? envelope)
+       (= component-authority-envelope-keys (set (keys envelope)))
+       (= :murakumo.component-authority/v1 (:format envelope))
+       (= :ed25519 (:algorithm envelope))
+       (every? #(and (string? %) (seq %) (<= (count %) 4096))
+               ((juxt :key-id :issuer :audience) envelope))
+       (pos-int? (:issued-at-ms envelope))
+       (valid-component-authority-event? (:event envelope))
+       (string? (:signature envelope))
+       (boolean (re-matches #"[0-9a-f]{128}" (:signature envelope)))))
 
 ;; These vectors are intentionally plain EDN-shaped values.  A host may use
 ;; any codec/language, but must obtain the same accept/reject result before it

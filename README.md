@@ -62,6 +62,12 @@ Component CID, epoch, sequence, event kind, and optional placement node.
 Murakumo owns epoch advancement; Kototama authenticates, orders, and consumes
 the events before named provider calls.
 
+Authority events cross processes only inside
+`:murakumo.component-authority/v1` Ed25519 envelopes. The canonical signing
+payload binds the trusted key identifier, issuer, audience, issuance time, and
+every event field; public keys are configured by the receiver and are never
+self-asserted by an envelope.
+
 New shared code earns a separate repository only when it has two or more
 independent consumers and can remain below this authority boundary.  Examples
 include generated WIT bindings or canonical artifact codecs.  Policy, engine,
