@@ -5,8 +5,8 @@
 (def component-world "kotoba:app/kotoba-app@0.1.0")
 (def component-target :wasm-component-kotoba-v1)
 (def component-world-v2 "kotoba:app/kotoba-app@0.2.0")
-(def component-target-v2 :wasm-component-kotoba-v2)
 (def typed-capability-world-v3 "aiueos:capability/application@0.3.0")
+(def component-target-v2 :wasm-component-kotoba-v2)
 (def wasi-version "0.3.0")
 (def ambient-wasi? false)
 
@@ -31,26 +31,6 @@
 (defn cancellation-required? [profile]
   (= :required (get-in component-profiles [profile :cancellation])))
 
-;; Ids 1-7 are the operations `aiueos:capability@0.3.0` (wit/aiueos-capability-v2)
-;; defines as `grant-request` cases and that a runtime host can execute today.
-;;
-;; Ids 8-12 are the Application Profile capabilities (ADR-2607201300;
-;; `kotoba/lang/component-model-v1.edn` in kotoba-component declares the same
-;; ids, interfaces, and function names). Naming them here is what lets the
-;; compiler EMIT a component that imports them -- without a name,
-;; `capability-import-name` throws and an application whose only effects are
-;; state/ui/llm/storage cannot be compiled at all, which is how the profile
-;; stayed unreachable from `.kotoba` source.
-;;
-;; A name is not a runtime claim. These five are deliberately NOT `grant-request`
-;; cases in the v0.3 WIT: no host implements them yet, so a component importing
-;; them links only against a provider that supplies the matching
-;; `kotoba:application/<interface>@1` function. Adding a case to the enum is the
-;; separate, larger P1 work ADR-2607252500 tracks.
-;;
-;; Ids 13-16 (`http/get-stream`, `object/*`) stay unnamed on purpose: their
-;; request/result types are streams and linear resources, not scalars, so a name
-;; would promise a lowering the Canonical ABI path does not yet have.
 (def capability-import-names
   {1 "aiueos-identity-sign"
    2 "aiueos-identity-verify"
@@ -59,11 +39,25 @@
    5 "aiueos-log-read"
    6 "aiueos-log-append"
    7 "aiueos-clock-now"
-   8 "aiueos-state-transact"
-   9 "aiueos-ui-commit"
-   10 "aiueos-ui-next-event"
-   11 "aiueos-llm-generate"
-   12 "aiueos-storage-transact"})
+   8 "aiueos-http-get-stream"
+   9 "aiueos-object-get-stream"
+   10 "aiueos-object-put-block"
+   11 "aiueos-object-compare-and-set-ref"})
+
+(def stream-contract
+  {:format :kotoba.stream/bytes-v1
+   :task :poll-cancel
+   :stream :pull-cancel
+   :required-limits #{:deadline-ms :max-items :max-bytes}
+   :zero-copy? false
+   :ambient-executor? false})
+
+(defn valid-stream-limits?
+  [limits]
+  (and (map? limits)
+       (= #{:deadline-ms :max-items :max-bytes} (set (keys limits)))
+       (every? #(pos-int? (get limits %))
+               [:deadline-ms :max-items :max-bytes])))
 
 (def capability-imports
   (->> capability-import-names vals (map keyword) set))
@@ -111,13 +105,7 @@
 (defn world-wit-v2
   "Render the pure v2 world, or return the authoritative v0.3 capability world
   for an effectful JVM compiler/runtime consumer. It never reuses v1 scalar
-  imports under a v2 target label.
-
-  This replaces the earlier unconditional rejection of effectful v2 lowering:
-  ADR-2607252500 makes the Wasm Component the primary application artifact, so
-  an effectful consumer is served the pinned `aiueos:capability@0.3.0` world
-  rather than being told to wait. `:cljs` still has no reader for the resource
-  and therefore still refuses."
+  imports under a v2 target label."
   [capability-ids]
   (if (seq capability-ids)
     #?(:clj (typed-capability-wit-v3)

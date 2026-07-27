@@ -25,6 +25,10 @@ interface capability {
     log-read,
     log-append,
     clock-now,
+    http-get-stream,
+    object-get-stream,
+    object-put-block,
+    object-compare-and-set-ref,
   }
   record bytes-request { bytes: list<u8>, }
   record bytes-response { bytes: list<u8>, }
@@ -40,6 +44,46 @@ interface capability {
   }
   record log-read-request { cursor: u64, max-bytes: u32, }
   record log-read-response { next-cursor: u64, bytes: list<u8>, }
+  record stream-chunk {
+    bytes: list<u8>,
+    done: bool,
+  }
+  /// A pull-based byte stream. Every read is bounded by both the caller's
+  /// request and the admitted grant. Dropping/cancelling closes host resources.
+  resource bytes-stream {
+    read: func(max-bytes: u32) -> result<stream-chunk, denial>;
+    cancel: func();
+  }
+  variant bytes-task-state {
+    pending,
+    ready(own<bytes-stream>),
+  }
+  /// Task<Stream Bytes> without ambient executors. Poll and cancellation are
+  /// explicit so every host can enforce deadline, item, and byte budgets.
+  resource bytes-task {
+    poll: func() -> result<bytes-task-state, denial>;
+    cancel: func();
+  }
+  record http-get-stream-request {
+    path: string,
+    headers: list<tuple<string, string>>,
+  }
+  record object-get-stream-request {
+    key: string,
+  }
+  record object-put-block-request {
+    key: string,
+    bytes: list<u8>,
+  }
+  record object-compare-and-set-ref-request {
+    key: string,
+    expected-etag: option<string>,
+    bytes: list<u8>,
+  }
+  record object-compare-and-set-ref-response {
+    won: bool,
+    etag: option<string>,
+  }
 
   /// The only way a guest obtains a resource representation. The host binds
   /// the returned handle to the exact admitted named operation and rejects
@@ -60,8 +104,16 @@ interface hash {
 }
 
 interface http {
-  use capability.{grant, denial, http-post-request, http-post-response};
+  use capability.{grant, denial, bytes-task, http-post-request, http-post-response, http-get-stream-request};
   post: func(authority: borrow<grant>, request: http-post-request) -> result<http-post-response, denial>;
+  get-stream: func(authority: borrow<grant>, request: http-get-stream-request) -> result<own<bytes-task>, denial>;
+}
+
+interface object-store {
+  use capability.{grant, denial, bytes-task, object-get-stream-request, object-put-block-request, object-compare-and-set-ref-request, object-compare-and-set-ref-response};
+  get-stream: func(authority: borrow<grant>, request: object-get-stream-request) -> result<own<bytes-task>, denial>;
+  put-block: func(authority: borrow<grant>, request: object-put-block-request) -> result<_, denial>;
+  compare-and-set-ref: func(authority: borrow<grant>, request: object-compare-and-set-ref-request) -> result<object-compare-and-set-ref-response, denial>;
 }
 
 interface log {
@@ -79,6 +131,7 @@ world providers {
   export identity;
   export hash;
   export http;
+  export object-store;
   export log;
   export clock;
 }
@@ -90,6 +143,7 @@ world application {
   import identity;
   import hash;
   import http;
+  import object-store;
   import log;
   import clock;
   export main: func() -> s64;
