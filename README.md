@@ -36,6 +36,9 @@ compiler → signed Component + declared imports
 - [`wit/aiueos-capability`](wit/aiueos-capability) reserves the provider-facing
   capability vocabulary.  It has no ambient WASI, filesystem, environment,
   network, clock, random, or process interface.
+- [`wit/aiueos-capability-v3`](wit/aiueos-capability-v3) adds the host-owned,
+  non-serializable packet-device resource used by Kekkai OS tunnel adapters;
+  it grants no ambient socket or descriptor access.
 - [`schemas/component-admission-v1.schema.json`](schemas/component-admission-v1.schema.json)
   is the closed hand-off envelope that a runtime must validate before invoking
   an engine linker.
