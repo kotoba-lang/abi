@@ -51,6 +51,10 @@
 ;; Ids 13-16 are the bounded, linear stream/object operations. Their names are
 ;; admitted only together with the explicit Task<Stream<Bytes>> WIT resources
 ;; below; no ambient executor or host filesystem is implied.
+;;
+;; Ids 17-18 are HTTP ingress lifecycle (host injects / guest polls accept +
+;; reply). Like application-profile 8-12 they are named for Component import
+;; emission only; they are not grant-request cases in the v0.3 WIT table.
 (def capability-import-names
   {1 "aiueos-identity-sign"
    2 "aiueos-identity-verify"
@@ -67,7 +71,9 @@
    13 "aiueos-http-get-stream"
    14 "aiueos-object-get-stream"
    15 "aiueos-object-put-block"
-   16 "aiueos-object-compare-and-set-ref"})
+   16 "aiueos-object-compare-and-set-ref"
+   17 "aiueos-http-accept"
+   18 "aiueos-http-reply"})
 
 ;; Exact routing for `aiueos:capability@0.3.0`. Historical application-profile
 ;; ids 8-12 intentionally remain outside this table: a valid legacy import is
