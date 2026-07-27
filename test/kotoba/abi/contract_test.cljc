@@ -11,7 +11,20 @@
   (is (= [:fuel :memory-pages]
          (contract/required-budget-keys :sync)))
   (is (= "aiueos-clock-now" (get contract/capability-import-names 7)))
+  (is (= "aiueos-object-compare-and-set-ref"
+         (get contract/capability-import-names 16)))
   (is (false? contract/ambient-wasi?)))
+
+(deftest task-stream-bytes-contract-is-bounded-and-cancellable
+  (is (= :poll-cancel (:task contract/stream-contract)))
+  (is (= :pull-cancel (:stream contract/stream-contract)))
+  (is (false? (:ambient-executor? contract/stream-contract)))
+  (is (contract/valid-stream-limits?
+       {:deadline-ms 1000 :max-items 64 :max-bytes 2097152}))
+  (is (not (contract/valid-stream-limits?
+            {:deadline-ms 1000 :max-items 64 :max-bytes 0})))
+  (is (not (contract/valid-stream-limits?
+            {:deadline-ms 1000 :max-items 64 :max-bytes 1 :ambient true}))))
 
 (deftest import-grant-provider-invariant-is-exact
   (let [imports #{:aiueos-clock-now}]
@@ -44,6 +57,10 @@
               contract/typed-capability-world-v3))
        (is (.contains wit "package aiueos:capability@0.3.0"))
        (is (.contains wit "acquire: func(request: grant-request)"))
+       (is (.contains wit "resource bytes-task"))
+       (is (.contains wit "resource bytes-stream"))
+       (is (.contains wit "get-stream: func"))
+       (is (.contains wit "compare-and-set-ref: func"))
        (is (not (.contains wit "wasi:"))))))
 
 (deftest abilities-are-exact-and-bounded
@@ -153,12 +170,11 @@
           12 "aiueos-storage-transact"}
          (select-keys contract/capability-import-names [8 9 10 11 12])))
   (is (= :aiueos.component/aiueos-llm-generate (contract/component-import-key 11)))
-  ;; Streams and linear resources stay unnamed on purpose: a name would promise
-  ;; a lowering the Canonical ABI path does not have.
-  (doseq [id [13 14 15 16]]
-    (is (thrown? #?(:clj clojure.lang.ExceptionInfo :cljs js/Error)
-                 (contract/capability-import-name id))
-        (str "capability " id " must not claim a portable import name yet")))
+  (is (= {13 "aiueos-http-get-stream"
+          14 "aiueos-object-get-stream"
+          15 "aiueos-object-put-block"
+          16 "aiueos-object-compare-and-set-ref"}
+         (select-keys contract/capability-import-names [13 14 15 16])))
   ;; Every name stays unique, so no two capabilities can collide onto one
   ;; component import key.
   (let [names (vals contract/capability-import-names)]

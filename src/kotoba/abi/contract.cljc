@@ -48,9 +48,9 @@
 ;; `kotoba:application/<interface>@1` function. Adding a case to the enum is the
 ;; separate, larger P1 work ADR-2607252500 tracks.
 ;;
-;; Ids 13-16 (`http/get-stream`, `object/*`) stay unnamed on purpose: their
-;; request/result types are streams and linear resources, not scalars, so a name
-;; would promise a lowering the Canonical ABI path does not yet have.
+;; Ids 13-16 are the bounded, linear stream/object operations. Their names are
+;; admitted only together with the explicit Task<Stream<Bytes>> WIT resources
+;; below; no ambient executor or host filesystem is implied.
 (def capability-import-names
   {1 "aiueos-identity-sign"
    2 "aiueos-identity-verify"
@@ -63,7 +63,26 @@
    9 "aiueos-ui-commit"
    10 "aiueos-ui-next-event"
    11 "aiueos-llm-generate"
-   12 "aiueos-storage-transact"})
+   12 "aiueos-storage-transact"
+   13 "aiueos-http-get-stream"
+   14 "aiueos-object-get-stream"
+   15 "aiueos-object-put-block"
+   16 "aiueos-object-compare-and-set-ref"})
+
+(def stream-contract
+  {:format :kotoba.stream/bytes-v1
+   :task :poll-cancel
+   :stream :pull-cancel
+   :required-limits #{:deadline-ms :max-items :max-bytes}
+   :zero-copy? false
+   :ambient-executor? false})
+
+(defn valid-stream-limits?
+  [limits]
+  (and (map? limits)
+       (= #{:deadline-ms :max-items :max-bytes} (set (keys limits)))
+       (every? #(pos-int? (get limits %))
+               [:deadline-ms :max-items :max-bytes])))
 
 (def capability-imports
   (->> capability-import-names vals (map keyword) set))
