@@ -69,6 +69,59 @@
    15 "aiueos-object-put-block"
    16 "aiueos-object-compare-and-set-ref"})
 
+;; Exact routing for `aiueos:capability@0.3.0`. Historical application-profile
+;; ids 8-12 intentionally remain outside this table: a valid legacy import is
+;; not automatically a typed v0.3 operation.
+(def typed-capability-operations
+  {1 {:name :identity/sign :import "aiueos-identity-sign"
+      :interface "identity" :function "sign" :grant-request "identity-sign"
+      :request :bytes-request :response :bytes-response}
+   2 {:name :identity/verify :import "aiueos-identity-verify"
+      :interface "identity" :function "verify" :grant-request "identity-verify"
+      :request :bytes-request :response :bool}
+   3 {:name :hash/sha256 :import "aiueos-hash-sha256"
+      :interface "hash" :function "sha256" :grant-request "hash-sha256"
+      :request :bytes-request :response :bytes-response}
+   4 {:name :http/post :import "aiueos-http-post"
+      :interface "http" :function "post" :grant-request "http-post"
+      :request :http-post-request :response :http-post-response}
+   5 {:name :log/read :import "aiueos-log-read"
+      :interface "log" :function "read" :grant-request "log-read"
+      :request :log-read-request :response :log-read-response}
+   6 {:name :log/append :import "aiueos-log-append"
+      :interface "log" :function "append" :grant-request "log-append"
+      :request :bytes-request :response :unit}
+   7 {:name :clock/now :import "aiueos-clock-now"
+      :interface "clock" :function "now" :grant-request "clock-now"
+      :request :unit :response :u64}
+   13 {:name :http/get-stream :import "aiueos-http-get-stream"
+       :interface "http" :function "get-stream" :grant-request "http-get-stream"
+       :request :http-get-stream-request :response :bytes-task :async true}
+   14 {:name :object/get-stream :import "aiueos-object-get-stream"
+       :interface "object-store" :function "get-stream"
+       :grant-request "object-get-stream"
+       :request :object-get-stream-request :response :bytes-task :async true}
+   15 {:name :object/put-block :import "aiueos-object-put-block"
+       :interface "object-store" :function "put-block"
+       :grant-request "object-put-block"
+       :request :object-put-block-request :response :unit}
+   16 {:name :object/compare-and-set-ref
+       :import "aiueos-object-compare-and-set-ref"
+       :interface "object-store" :function "compare-and-set-ref"
+       :grant-request "object-compare-and-set-ref"
+       :request :object-compare-and-set-ref-request
+       :response :object-compare-and-set-ref-response}})
+
+(def typed-capability-ids (set (keys typed-capability-operations)))
+
+(defn typed-capability-operation
+  "Resolve an id to its exact typed v0.3 operation. Unknown and legacy-only
+  ids fail closed."
+  [id]
+  (or (get typed-capability-operations id)
+      (throw (ex-info "capability has no typed v0.3 operation"
+                      {:phase :component-abi-v3 :capability-id id}))))
+
 (def stream-contract
   {:format :kotoba.stream/bytes-v1
    :task :poll-cancel
