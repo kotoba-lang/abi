@@ -41,6 +41,24 @@
     (is (= :aiueos.component/aiueos-clock-now
            (contract/component-import-key 7)))))
 
+(deftest typed-v03-operation-routing-is-exact
+  (is (= #{1 2 3 4 5 6 7 13 14 15 16}
+         contract/typed-capability-ids))
+  (is (= {:name :clock/now :import "aiueos-clock-now"
+          :interface "clock" :function "now" :grant-request "clock-now"
+          :request :unit :response :u64}
+         (contract/typed-capability-operation 7)))
+  (is (= "get-stream"
+         (:function (contract/typed-capability-operation 13))))
+  (is (= "object-store"
+         (:interface (contract/typed-capability-operation 16))))
+  (is (every? (fn [[id operation]]
+                (= (get contract/capability-import-names id)
+                   (:import operation)))
+              contract/typed-capability-operations))
+  (is (thrown? #?(:clj clojure.lang.ExceptionInfo :cljs js/Error)
+               (contract/typed-capability-operation 8))))
+
 (deftest v2-world-never-labels-an-effect-as-a-v1-scalar-import
   (is (.contains (contract/world-wit-v2 #{}) "package kotoba:app@0.2.0"))
   #?(:clj
