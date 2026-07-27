@@ -45,6 +45,8 @@ interface capability {
   record log-read-request { cursor: u64, max-bytes: u32, }
   record log-read-response { next-cursor: u64, bytes: list<u8>, }
   record stream-chunk { bytes: list<u8>, done: bool, }
+  /// A pull-based byte stream. Every read is bounded by both the caller's
+  /// request and the admitted grant. Dropping/cancelling closes host resources.
   resource bytes-stream {
     read: func(max-bytes: u32) -> result<stream-chunk, denial>;
     cancel: func();
@@ -53,6 +55,8 @@ interface capability {
     pending,
     ready(own<bytes-stream>),
   }
+  /// Task<Stream Bytes> without ambient executors. Poll and cancellation are
+  /// explicit so every host can enforce deadline, item, and byte budgets.
   resource bytes-task {
     poll: func() -> result<bytes-task-state, denial>;
     cancel: func();
