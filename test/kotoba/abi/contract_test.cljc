@@ -46,6 +46,7 @@
          contract/typed-capability-ids))
   (is (= {:name :clock/now :import "aiueos-clock-now"
           :interface "clock" :function "now" :grant-request "clock-now"
+          :grant-index 6
           :request :unit :response :u64}
          (contract/typed-capability-operation 7)))
   (is (= "get-stream"
@@ -56,6 +57,9 @@
                 (= (get contract/capability-import-names id)
                    (:import operation)))
               contract/typed-capability-operations))
+  (is (= (set (range 11))
+         (set (map :grant-index
+                   (vals contract/typed-capability-operations)))))
   (is (thrown? #?(:clj clojure.lang.ExceptionInfo :cljs js/Error)
                (contract/typed-capability-operation 8))))
 
