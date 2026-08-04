@@ -1,6 +1,6 @@
 (ns kotoba.abi.contract
   "Small, dependency-free constants shared by generated ABI consumers."
-  #?(:clj (:require [clojure.java.io :as io])))
+  (:require [kotoba.abi.wit-data :as wit-data]))
 
 (def component-world "kotoba:app/kotoba-app@0.1.0")
 (def component-target :wasm-component-kotoba-v1)
@@ -195,7 +195,7 @@
                        (sort capability-ids)))
        "  export main: func() -> s64;\n}\n"))
 
-#?(:clj (declare typed-capability-wit-v3))
+(declare typed-capability-wit-v3)
 
 (defn world-wit-v2
   "Render the pure v2 world, or return the authoritative v0.3 capability world
@@ -205,28 +205,32 @@
   This replaces the earlier unconditional rejection of effectful v2 lowering:
   ADR-2607252500 makes the Wasm Component the primary application artifact, so
   an effectful consumer is served the pinned `aiueos:capability@0.3.0` world
-  rather than being told to wait. `:cljs` still has no reader for the resource
-  and therefore still refuses."
+  rather than being told to wait. Both platforms are served now: the WIT is
+  embedded rather than read off the classpath, so `:cljs` no longer refuses."
   [capability-ids]
   (if (seq capability-ids)
-    #?(:clj (typed-capability-wit-v3)
-       :cljs (throw (ex-info "typed capability WIT source is JVM-only"
-                             {:phase :component-abi-v3
-                              :capability-ids (set capability-ids)})))
+    (typed-capability-wit-v3)
     (str "package kotoba:app@0.2.0;\n\nworld kotoba-app {\n"
          "  export main: func() -> s64;\n}\n")))
 
-#?(:clj
-   (defn typed-capability-wit-v3
-     "Return the authoritative typed capability WIT bytes from this pinned ABI
-     dependency. Compiler consumers must copy this exact source into their
-     temporary package graph instead of maintaining a hand-written mirror."
-     []
-     (let [resource (io/resource "aiueos-capability-v2/aiueos-capability.wit")]
-       (when-not resource
-         (throw (ex-info "authoritative typed capability WIT is unavailable"
-                         {:phase :component-abi-v3})))
-       (slurp resource))))
+(defn typed-capability-wit-v3
+  "Return the authoritative typed capability WIT bytes from this pinned ABI
+  dependency. Compiler consumers must copy this exact source into their
+  temporary package graph instead of maintaining a hand-written mirror.
+
+  Portable. This used to be `:clj`-only because it read the WIT off the
+  classpath, which made the typed-capability-v3 profile the one part of the
+  component WIT layer with no cross-implementation evidence: ClojureScript
+  could not produce the world at all, so the two could not be compared.
+
+  The bytes now come from `kotoba.abi.wit-data`, which embeds the file. A
+  filesystem read would not have worked — this repository is consumed as a git
+  dependency, so a consumer runs from its own root and any relative path into
+  this repo's `wit/` tree is wrong. Embedding is also what makes the two
+  platforms byte-identical rather than merely intended to be;
+  `kotoba.abi.wit-data-test` asserts the embedded copy still equals the file."
+  []
+  wit-data/aiueos-capability-v2-wit)
 
 (defn exact-import-grant-provider-sets?
   "True only when declared imports, grants, and provider binding keys agree.
