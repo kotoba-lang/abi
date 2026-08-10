@@ -1,5 +1,6 @@
 (ns kotoba.abi.contract-test
-  (:require [clojure.test :refer [deftest is]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is testing]]
             [kotoba.abi.contract :as contract]))
 
 (deftest component-contract-is-explicit
@@ -92,7 +93,11 @@
     (is (not (contract/valid-ability? (assoc ability :extra true))))
     (is (not (contract/valid-ability? (assoc ability :deadline-ms 0))))))
 
-(def cid "bafyportablehostcontract")
+(def cid
+  "A real CIDv1 — cidv1-raw(sha2-256(\"kotoba portable execution contract v1\")).
+  The previous value, \"bafyportablehostcontract\", passed only because `cid?`
+  was `#\"b.+\"`."
+  "bafkreid4qjrk54dtbrpa4zx3b2umgsvevohcm7z436igajsdd34khleu2q")
 
 (deftest portable-host-descriptors-are-closed-and-bound
   (let [plan {:format :kotoba.plan/v1 :plan-cid cid :code-closure-cid cid
@@ -201,3 +206,66 @@
   ;; component import key.
   (let [names (vals contract/capability-import-names)]
     (is (= (count names) (count (distinct names))))))
+
+;; --- CID identity ----------------------------------------------------------
+
+(deftest cid-predicate-decodes-rather-than-pattern-matches
+  ;; Before this, `cid?` was `#"b.+"`. Everything in `rejected` below passed.
+  (let [accepted
+        [;; dag-cbor over sha2-256 — a capability definition CID
+         "bafyreigj5lmdlxhxhlebacwoprr2hmqq24zwa45iiocbujuzqjvkkxvtpq"
+         ;; raw over sha2-256 — a capability hash-contract CID
+         "bafkreiflhj3fslsbh7okdas2fzlhmogai64x6p3lkla6gtr7berbp7ftvi"
+         ;; the DefCID :pure-const frozen vector from kotoba-lang
+         "bafyreiarrzdga4uwvk6miw6rdndih4z56xgtd4qz25tb3gxld7toolyaiu"
+         ;; this repository's own conformance-vector identity
+         cid]
+        rejected
+        [;; the placeholder these very vectors used to ship
+         "bafy-artifact"
+         "bafyportablehostcontract"
+         ;; a word that starts with the multibase letter
+         "banana"
+         ;; too short to carry a multihash
+         "b" "bafy" ""
+         ;; a real CID with its last character removed: the multihash length
+         ;; no longer matches the bytes that follow it
+         "bafyreigj5lmdlxhxhlebacwoprr2hmqq24zwa45iiocbujuzqjvkkxvtp"
+         ;; correct payload, wrong multibase prefix
+         "zafyreigj5lmdlxhxhlebacwoprr2hmqq24zwa45iiocbujuzqjvkkxvtpq"
+         ;; characters outside the base32 alphabet
+         "bAFYREIGJ5LMDLXHXHLEBACWOPRR2HMQQ24ZWA45IIOCBUJUZQJVKKXVTPQ"
+         "bafyrei0189"
+         nil 42 :bafyrei]]
+    (doseq [c accepted]
+      (is (contract/cid? c) (str "must accept " (pr-str c))))
+    (doseq [c rejected]
+      (is (not (contract/cid? c)) (str "must reject " (pr-str c))))))
+
+(defn- cid-key? [k]
+  (and (keyword? k)
+       (or (= "cid" (name k)) (str/ends-with? (name k) "-cid"))))
+
+(deftest accepted-conformance-vectors-carry-real-identities
+  ;; The vectors are what another implementation reproduces to prove it agrees,
+  ;; so a non-identifier inside an ACCEPTED one asks every host to accept one.
+  ;;
+  ;; Only the accepted vectors. The rejected ones carry a nil :policy-cid or
+  ;; :wit-world-cid on purpose — a broken identity is the thing they exist to
+  ;; have refused, and requiring them to be well-formed would delete the case.
+  (let [found (for [vector contract/portable-execution-v1-vectors
+                    :when (= :accept (:expect vector))
+                    [_ descriptor] vector
+                    :when (map? descriptor)
+                    [k v] descriptor
+                    :when (cid-key? k)
+                    one (if (coll? v) v [v])]
+                [k one])]
+    (is (seq found) "sanity: the accepted vectors carry identities at all")
+    (doseq [[k v] found]
+      (is (contract/cid? v)
+          (str k " in an accepted vector is not a CID: " (pr-str v)))))
+  (testing "and a rejected vector is still rejected for its own reason"
+    (doseq [vector contract/portable-execution-v1-vectors
+            :when (not= :accept (:expect vector))]
+      (is (false? (contract/conformance-result vector)) (name (:id vector))))))

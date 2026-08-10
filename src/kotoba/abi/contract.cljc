@@ -274,8 +274,86 @@
   #{:format :algorithm :key-id :issuer :audience :issued-at-ms
     :event :signature})
 
-(defn- cid? [value]
-  (and (string? value) (boolean (re-matches #"b.+" value))))
+;; --- CID identity -----------------------------------------------------------
+;;
+;; This predicate used to be `(re-matches #"b.+" value)`, which accepts
+;; "banana". Every CID field in this contract — plan, artifact, code closure,
+;; policy, policy decision, input, outcome, receipt — was therefore checked
+;; only for a leading multibase letter, and the test fixtures in this very
+;; repository used "bafy-artifact" as an artifact identity.
+;;
+;; `kototama.component-platform` already knew this: its own `cid?` decodes the
+;; multihash, and its deps.edn says why in one line — "a leading `b` is not
+;; evidence of content addressing". The result was that admission through
+;; kototama was strict while the portable contract was not, so a consumer that
+;; trusted `valid-plan?` alone (compiler/plan.cljc, aiueos/contract.cljc,
+;; code-graph, kotobase) got the weak answer.
+;;
+;; This repository has no dependencies and must stay portable across JVM,
+;; ClojureScript and nbb, so base32 and varint are decoded here rather than by
+;; pulling in io-multiformats. That is ~40 lines against a security boundary
+;; the whole ABI rests on.
+
+(def ^:private base32-value
+  "RFC 4648 base32, lowercase, unpadded — the `b` multibase alphabet. A map
+  rather than `.indexOf` so the decode stays interop-free and portable."
+  (into {} (map-indexed (fn [i c] [c i]) "abcdefghijklmnopqrstuvwxyz234567")))
+
+(defn- base32-decode
+  "Returns a vector of byte values, or nil if any character is outside the
+  alphabet."
+  [s]
+  (loop [cs (seq s) acc 0 bits 0 out []]
+    (if-let [c (first cs)]
+      (if-let [v (base32-value c)]
+        (let [acc (bit-or (bit-shift-left acc 5) v)
+              bits (+ bits 5)]
+          (if (>= bits 8)
+            (let [bits' (- bits 8)]
+              (recur (rest cs)
+                     (bit-and acc (dec (bit-shift-left 1 bits')))
+                     bits'
+                     (conj out (bit-and 0xff (bit-shift-right acc bits')))))
+            (recur (rest cs) acc bits out)))
+        nil)
+      out)))
+
+(defn- read-varint
+  "Unsigned LEB128 at `offset`. Returns [value next-offset], or nil if the
+  bytes run out before the continuation bit clears."
+  [bs offset]
+  (loop [offset offset value 0 shift 0]
+    (when (< offset (count bs))
+      (let [b (bit-and (nth bs offset) 0xff)]
+        (if (< b 0x80)
+          [(bit-or value (bit-shift-left b shift)) (inc offset)]
+          (when (< shift 56)
+            (recur (inc offset)
+                   (bit-or value (bit-shift-left (bit-and b 0x7f) shift))
+                   (+ shift 7))))))))
+
+(defn cid?
+  "True only for a fully decodable CIDv1 with a well-formed multihash.
+
+  Deliberately structural and not semantic: it proves the string is a content
+  identifier, not that the content exists or matches. Same shape as
+  `kototama.component-platform`'s check, so the portable contract and the
+  admission boundary agree."
+  [value]
+  (boolean
+   (and (string? value)
+        (< 1 (count value))
+        (= \b (first value))
+        (when-let [bs (base32-decode (subs value 1))]
+          (when-let [[version off1] (read-varint bs 0)]
+            (when-let [[codec off2] (read-varint bs off1)]
+              (when-let [[hash-fn off3] (read-varint bs off2)]
+                (when-let [[hash-len off4] (read-varint bs off3)]
+                  (and (= 1 version)
+                       (pos? codec)
+                       (pos? hash-fn)
+                       (pos? hash-len)
+                       (= hash-len (- (count bs) off4)))))))))))
 
 (defn- cid-vector? [value]
   (and (vector? value) (every? cid? value) (= (count value) (count (distinct value)))))
@@ -404,7 +482,17 @@
 ;; any codec/language, but must obtain the same accept/reject result before it
 ;; issues a non-serializable capability handle or invokes an engine.
 (def portable-execution-v1-vectors
-  (let [cid "bafyportablehostcontract"
+  ;; The placeholder that stood here, "bafyportablehostcontract", is not a CID.
+  ;; These vectors are what another implementation reproduces to prove it
+  ;; agrees, so shipping a non-identifier as an identity asked every host to
+  ;; accept one. It is now a real CIDv1, and recomputable rather than magic:
+  ;;
+  ;;   cidv1-raw(sha2-256("kotoba portable execution contract v1"))
+  ;;
+  ;; The vectors say nothing about what that content IS — `cid?` is structural
+  ;; by design — only that a conforming host is handed identifiers rather than
+  ;; strings that begin with the right letter.
+  (let [cid "bafkreid4qjrk54dtbrpa4zx3b2umgsvevohcm7z436igajsdd34khleu2q"
         plan {:format :kotoba.plan/v1 :plan-cid cid :code-closure-cid cid
               :artifact-cid cid :compiler-contract cid :requested-effects #{:audit/append}
               :requested-resources #{:receipt-log} :input-cid cid :budget {:fuel 1}}
