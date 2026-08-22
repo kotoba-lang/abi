@@ -38,7 +38,26 @@
    4 "aiueos-http-post"
    5 "aiueos-log-read"
    6 "aiueos-log-append"
-   7 "aiueos-clock-now"})
+   7 "aiueos-clock-now"
+   8 "aiueos-http-get-stream"
+   9 "aiueos-object-get-stream"
+   10 "aiueos-object-put-block"
+   11 "aiueos-object-compare-and-set-ref"})
+
+(def stream-contract
+  {:format :kotoba.stream/bytes-v1
+   :task :poll-cancel
+   :stream :pull-cancel
+   :required-limits #{:deadline-ms :max-items :max-bytes}
+   :zero-copy? false
+   :ambient-executor? false})
+
+(defn valid-stream-limits?
+  [limits]
+  (and (map? limits)
+       (= #{:deadline-ms :max-items :max-bytes} (set (keys limits)))
+       (every? #(pos-int? (get limits %))
+               [:deadline-ms :max-items :max-bytes])))
 
 (def capability-imports
   (->> capability-import-names vals (map keyword) set))

@@ -11,7 +11,20 @@
   (is (= [:fuel :memory-pages]
          (contract/required-budget-keys :sync)))
   (is (= "aiueos-clock-now" (get contract/capability-import-names 7)))
+  (is (= "aiueos-object-compare-and-set-ref"
+         (get contract/capability-import-names 11)))
   (is (false? contract/ambient-wasi?)))
+
+(deftest task-stream-bytes-contract-is-bounded-and-cancellable
+  (is (= :poll-cancel (:task contract/stream-contract)))
+  (is (= :pull-cancel (:stream contract/stream-contract)))
+  (is (false? (:ambient-executor? contract/stream-contract)))
+  (is (contract/valid-stream-limits?
+       {:deadline-ms 1000 :max-items 64 :max-bytes 2097152}))
+  (is (not (contract/valid-stream-limits?
+            {:deadline-ms 1000 :max-items 64 :max-bytes 0})))
+  (is (not (contract/valid-stream-limits?
+            {:deadline-ms 1000 :max-items 64 :max-bytes 1 :ambient true}))))
 
 (deftest import-grant-provider-invariant-is-exact
   (let [imports #{:aiueos-clock-now}]
@@ -44,6 +57,10 @@
               contract/typed-capability-world-v3))
        (is (.contains wit "package aiueos:capability@0.3.0"))
        (is (.contains wit "acquire: func(request: grant-request)"))
+       (is (.contains wit "resource bytes-task"))
+       (is (.contains wit "resource bytes-stream"))
+       (is (.contains wit "get-stream: func"))
+       (is (.contains wit "compare-and-set-ref: func"))
        (is (not (.contains wit "wasi:"))))))
 
 (deftest abilities-are-exact-and-bounded
