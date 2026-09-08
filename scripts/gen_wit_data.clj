@@ -13,7 +13,7 @@
 ;;   clojure -M -e "(load-file \"scripts/gen_wit_data.clj\")"
 
 (require '[clojure.java.io :as io]
-         '[clojure.string :as str])
+         '[kotoba.lang.text :as str])
 
 (def sources
   [{:var 'aiueos-capability-v2-wit
