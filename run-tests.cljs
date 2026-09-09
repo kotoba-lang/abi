@@ -11,9 +11,16 @@
 ;; `kotoba.abi.wit-data-test` stays out: it reads the WIT file off the
 ;; classpath through `clojure.java.io`, which is the one genuinely JVM-bound
 ;; assertion in this repository's tests.
+;;
+;; Its NEIGHBOURS did not need to stay out with it, and one of them least of
+;; all: `an-effectful-v2-world-no-longer-refuses-off-jvm` exists because
+;; `world-wit-v2` used to throw `JVM-only` under ClojureScript, and it had only
+;; ever run on the JVM. Those assertions are now
+;; `kotoba.abi.wit-data-portable-test`, and they run here.
 (ns run-tests
   (:require [cljs.test :as t]
-            [kotoba.abi.contract-test]))
+            [kotoba.abi.contract-test]
+            [kotoba.abi.wit-data-portable-test]))
 
 (defmethod t/report [:cljs.test/default :end-run-tests] [m]
   (println (str "\nnbb: " (:test m) " tests, " (:pass m) " passed, "
@@ -21,4 +28,5 @@
   (when (pos? (+ (or (:fail m) 0) (or (:error m) 0)))
     (set! (.-exitCode js/process) 1)))
 
-(t/run-tests 'kotoba.abi.contract-test)
+(t/run-tests 'kotoba.abi.contract-test
+             'kotoba.abi.wit-data-portable-test)
