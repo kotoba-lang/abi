@@ -75,6 +75,37 @@
    17 "aiueos-http-accept"
    18 "aiueos-http-reply"})
 
+(defn capability-id
+  "The plain-integer form of a capability wire id.
+
+  A compiler hands this namespace an i64 KIR value, and on ClojureScript an
+  i64 IS a JS BigInt. `cljs.core` can do neither of the two things every
+  function below needs:
+
+    (compare (js/BigInt 7) (js/BigInt 23)) => throws \"Cannot compare 23 to 7\"
+    (hash (js/BigInt 7))                   => throws \"Cannot create property
+                                              'closure_uid_...' on bigint '7'\"
+
+  The second is why a BigInt id could not even be LOOKED UP here: a map of
+  eight entries or fewer is a `PersistentArrayMap` and `get` scans it with
+  `=`, answering nil; `capability-import-names` has more than eight, so it is
+  a `PersistentHashMap` and the same `get` hashes the key and throws instead.
+  A map growing past eight entries is not supposed to change what `get`
+  refuses.
+
+  Normalising is safe here because the ids this namespace names are wire ids
+  and bounded -- the browser host admits 0..255 -- so a JS number holds every
+  one of them exactly. Anything that is not a BigInt is returned untouched,
+  so a malformed id still fails closed at the lookup rather than being
+  coerced into a plausible one."
+  [id]
+  #?(:clj id
+     :cljs (if (and (some? id)
+                    (try (= (.-constructor id) js/BigInt) (catch :default _ false)))
+             (js/Number id)
+             id)))
+
+
 ;; Exact routing for `aiueos:capability@0.3.0`. Historical application-profile
 ;; ids 8-12 intentionally remain outside this table: a valid legacy import is
 ;; not automatically a typed v0.3 operation.
@@ -135,7 +166,7 @@
   "Resolve an id to its exact typed v0.3 operation. Unknown and legacy-only
   ids fail closed."
   [id]
-  (or (get typed-capability-operations id)
+  (or (get typed-capability-operations (capability-id id))
       (throw (ex-info "capability has no typed v0.3 operation"
                       {:phase :component-abi-v3 :capability-id id}))))
 
@@ -178,7 +209,7 @@
   Unknown ids are a compile-time error; an adapter must never turn one into a
   generic or ambient host call."
   [id]
-  (or (get capability-import-names id)
+  (or (get capability-import-names (capability-id id))
       (throw (ex-info "Component capability has no named ABI import"
                       {:phase :component-abi :capability-id id}))))
 
@@ -192,7 +223,10 @@
   [capability-ids]
   (str "package kotoba:app@0.1.0;\n\nworld kotoba-app {\n"
        (apply str (map #(str "  import " (capability-import-name %) ": func(value: s64) -> s64;\n")
-                       (sort capability-ids)))
+                       ;; `capability-id` BEFORE `sort`, not inside the map:
+                       ;; `sort` is where a set of BigInt ids threw, and it
+                       ;; threw before a single import name was resolved.
+                       (sort (map capability-id capability-ids))))
        "  export main: func() -> s64;\n}\n"))
 
 (declare typed-capability-wit-v3)

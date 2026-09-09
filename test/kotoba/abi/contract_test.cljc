@@ -1,7 +1,20 @@
+;; `clojure.test` used to be required here with no reader conditional, so
+;; this `.cljc` file loaded on the JVM only. That is not a detail: the whole
+;; class of defect this namespace now regresses -- a capability id that is a
+;; JS BigInt on ClojureScript and a Long on the JVM -- can only be seen from
+;; the ClojureScript side, and could not be, because the file never got there.
 (ns kotoba.abi.contract-test
   (:require [kotoba.lang.text :as str]
-            [clojure.test :refer [deftest is testing]]
+            #?(:clj  [clojure.test :refer [deftest is testing]]
+               :cljs [cljs.test :refer [deftest is testing]])
             [kotoba.abi.contract :as contract]))
+
+;; The id a compiler actually hands this namespace: a KIR i64, which is a
+;; `Long` on the JVM and a JS `BigInt` on ClojureScript. Written once here so
+;; every test below exercises the real inhabitant of the type rather than the
+;; literal that happens to be readable on both hosts.
+(defn- wire-id [n]
+  #?(:clj n :cljs (js/BigInt n)))
 
 (deftest component-contract-is-explicit
   (is (= "kotoba:app/kotoba-app@0.1.0" contract/component-world))
@@ -37,10 +50,50 @@
 
 (deftest effectful-world-has-only-named-imports
   (let [wit (contract/world-wit #{7})]
-    (is (.contains wit "import aiueos-clock-now"))
-    (is (not (.contains wit "wasi:")))
+    (is (str/includes? wit "import aiueos-clock-now"))
+    (is (not (str/includes? wit "wasi:")))
     (is (= :aiueos.component/aiueos-clock-now
            (contract/component-import-key 7)))))
+
+;; --- the id a compiler actually holds --------------------------------------
+;;
+;; Everything above passes a literal integer, which on ClojureScript is a plain
+;; Number. A compiler passes an i64 KIR value, which on ClojureScript is a JS
+;; BigInt. The two spellings met completely different code:
+;;
+;;   `sort`, on two or more ids -> "Cannot compare 23 to 7"
+;;   `get`,  on this 18-entry (so hashed) map
+;;           -> "Cannot create property 'closure_uid_...' on bigint '7'"
+;;
+;; ONE id never reached the first, and a literal never reached either, so a
+;; suite of exactly this shape stayed green. Measured 2026-09-09 under nbb.
+
+(deftest a-wire-id-resolves-to-its-import-name
+  (is (= "aiueos-clock-now" (contract/capability-import-name (wire-id 7))))
+  (is (= "aiueos-object-compare-and-set-ref"
+         (contract/capability-import-name (wire-id 16))))
+  (is (= :aiueos.component/aiueos-clock-now
+         (contract/component-import-key (wire-id 7))))
+  (is (= :clock/now (:name (contract/typed-capability-operation (wire-id 7)))))
+  (testing "and an id with no name still fails closed rather than being coerced"
+    (is (thrown? #?(:clj clojure.lang.ExceptionInfo :cljs js/Error)
+                 (contract/capability-import-name (wire-id 99))))
+    (is (thrown? #?(:clj clojure.lang.ExceptionInfo :cljs js/Error)
+                 (contract/capability-import-name :clock/now)))))
+
+(deftest a-world-of-three-wire-ids-is-rendered-in-numeric-order
+  ;; 3, 7 and 16 order differently as text ("16" < "3" < "7") than as numbers,
+  ;; so this asserts the ORDER of the rendered world and not merely that
+  ;; rendering it did not throw. Given descending, on purpose.
+  (is (= (str "package kotoba:app@0.1.0;\n\nworld kotoba-app {\n"
+              "  import aiueos-hash-sha256: func(value: s64) -> s64;\n"
+              "  import aiueos-clock-now: func(value: s64) -> s64;\n"
+              "  import aiueos-object-compare-and-set-ref: func(value: s64) -> s64;\n"
+              "  export main: func() -> s64;\n}\n")
+         (contract/world-wit (set (map wire-id [16 7 3])))))
+  (testing "and a world of plain integers renders the same text"
+    (is (= (contract/world-wit #{16 7 3})
+           (contract/world-wit (set (map wire-id [16 7 3])))))))
 
 (deftest typed-v03-operation-routing-is-exact
   (is (= #{1 2 3 4 5 6 7 13 14 15 16}
@@ -65,26 +118,28 @@
                (contract/typed-capability-operation 8))))
 
 (deftest v2-world-never-labels-an-effect-as-a-v1-scalar-import
-  (is (.contains (contract/world-wit-v2 #{}) "package kotoba:app@0.2.0"))
-  #?(:clj
-     (let [wit (contract/world-wit-v2 #{7})]
-       (is (.contains wit "package aiueos:capability@0.3.0"))
-       (is (not (.contains wit "import aiueos-clock-now: func(value: s64)"))))
-     :cljs
-     (is (thrown? js/Error (contract/world-wit-v2 #{7})))))
+  (is (str/includes? (contract/world-wit-v2 #{}) "package kotoba:app@0.2.0"))
+  ;; The `:cljs` branch here used to assert `(thrown? js/Error ...)`, which was
+  ;; true while `typed-capability-wit-v3` read the WIT off the classpath and
+  ;; therefore could not run outside the JVM. It stopped being true when that
+  ;; function started returning the bytes `kotoba.abi.wit-data` embeds -- and
+  ;; nothing noticed, because this file did not load on ClojureScript. Both
+  ;; hosts now make the same claim, which is the claim the embedding was for.
+  (let [wit (contract/world-wit-v2 #{7})]
+    (is (str/includes? wit "package aiueos:capability@0.3.0"))
+    (is (not (str/includes? wit "import aiueos-clock-now: func(value: s64)")))))
 
-#?(:clj
-   (deftest authoritative-v3-wit-is-published-to-compiler-consumers
-     (let [wit (contract/typed-capability-wit-v3)]
-       (is (= "aiueos:capability/application@0.3.0"
-              contract/typed-capability-world-v3))
-       (is (.contains wit "package aiueos:capability@0.3.0"))
-       (is (.contains wit "acquire: func(request: grant-request)"))
-       (is (.contains wit "resource bytes-task"))
-       (is (.contains wit "resource bytes-stream"))
-       (is (.contains wit "get-stream: func"))
-       (is (.contains wit "compare-and-set-ref: func"))
-       (is (not (.contains wit "wasi:"))))))
+(deftest authoritative-v3-wit-is-published-to-compiler-consumers
+  (let [wit (contract/typed-capability-wit-v3)]
+    (is (= "aiueos:capability/application@0.3.0"
+           contract/typed-capability-world-v3))
+    (is (str/includes? wit "package aiueos:capability@0.3.0"))
+    (is (str/includes? wit "acquire: func(request: grant-request)"))
+    (is (str/includes? wit "resource bytes-task"))
+    (is (str/includes? wit "resource bytes-stream"))
+    (is (str/includes? wit "get-stream: func"))
+    (is (str/includes? wit "compare-and-set-ref: func"))
+    (is (not (str/includes? wit "wasi:")))))
 
 (deftest abilities-are-exact-and-bounded
   (let [ability {:target "clock://monotonic" :operation :clock/now
