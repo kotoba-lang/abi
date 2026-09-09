@@ -1,0 +1,24 @@
+;; nbb --classpath "src:test:$(clojure -Spath -M:test)" run-tests.cljs
+;;
+;; The ClojureScript half of this suite. It did not exist until 2026-09-09,
+;; and `kotoba.abi.contract-test` was a `.cljc` file whose `:require` named
+;; `clojure.test` with no reader conditional -- so it loaded on the JVM only.
+;; That is the whole reason a capability id being a JS BigInt on this host,
+;; and cljs.core refusing to compare or hash one, could sit in
+;; `kotoba.abi.contract` unmeasured: the only host that can see it was the
+;; only host the test never ran on.
+;;
+;; `kotoba.abi.wit-data-test` stays out: it reads the WIT file off the
+;; classpath through `clojure.java.io`, which is the one genuinely JVM-bound
+;; assertion in this repository's tests.
+(ns run-tests
+  (:require [cljs.test :as t]
+            [kotoba.abi.contract-test]))
+
+(defmethod t/report [:cljs.test/default :end-run-tests] [m]
+  (println (str "\nnbb: " (:test m) " tests, " (:pass m) " passed, "
+                (:fail m) " failed, " (:error m) " errors"))
+  (when (pos? (+ (or (:fail m) 0) (or (:error m) 0)))
+    (set! (.-exitCode js/process) 1)))
+
+(t/run-tests 'kotoba.abi.contract-test)
