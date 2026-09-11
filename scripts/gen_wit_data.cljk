@@ -10,7 +10,7 @@
 ;; The embedded copy is checked against the file by
 ;; kotoba.abi.wit-data-test, so it cannot drift silently.
 ;;
-;;   clojure -M -e "(load-file \"scripts/gen_wit_data.cljk\")"
+;;   kbb -M -e "(load-file \"scripts/gen_wit_data.cljk\")"
 
 (require '[clojure.java.io :as io]
          '[kotoba.lang.text :as str])
