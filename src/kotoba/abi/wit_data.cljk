@@ -1,5 +1,5 @@
 (ns kotoba.abi.wit-data
-  "GENERATED — do not edit. Run scripts/gen_wit_data.clj.
+  "GENERATED — do not edit. Run scripts/gen_wit_data.cljk.
 
   The authoritative WIT bytes, embedded so every platform reads the same
   string. This repository is a git dependency, so a consumer runs from its
