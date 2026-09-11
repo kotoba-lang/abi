@@ -7,7 +7,8 @@
   embedding is what makes the JVM and ClojureScript copies byte-identical
   rather than merely intended to be.
 
-  kotoba.abi.wit-data-test asserts each string still equals its file.")
+  kotoba.abi.wit-data-test asserts each string still equals its file."
+  {:kotoba/export [aiueos-capability-v2-wit files]})
 
 ;; aiueos-capability-v2/aiueos-capability.wit
 ;; The pinned aiueos:capability@0.3.0 world served to effectful consumers. The directory says v2 and the package says 0.3.0; that is the existing naming, not a mismatch.
