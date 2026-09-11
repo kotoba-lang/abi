@@ -1,4 +1,4 @@
-;; Regenerates src/kotoba/abi/wit_data.cljc from the authoritative WIT files.
+;; Regenerates src/kotoba/abi/wit_data.cljk from the authoritative WIT files.
 ;;
 ;; The typed capability world had to be readable on every platform, not just
 ;; the JVM. Reading it from the filesystem is not an option: this repository is
@@ -10,7 +10,7 @@
 ;; The embedded copy is checked against the file by
 ;; kotoba.abi.wit-data-test, so it cannot drift silently.
 ;;
-;;   clojure -M -e "(load-file \"scripts/gen_wit_data.clj\")"
+;;   clojure -M -e "(load-file \"scripts/gen_wit_data.cljk\")"
 
 (require '[clojure.java.io :as io]
          '[kotoba.lang.text :as str])
@@ -34,9 +34,9 @@
                  :text (read-wit path)))
         sources))
 
-(spit "src/kotoba/abi/wit_data.cljc"
+(spit "src/kotoba/abi/wit_data.cljk"
       (str "(ns kotoba.abi.wit-data\n"
-           "  \"GENERATED — do not edit. Run scripts/gen_wit_data.clj.\n\n"
+           "  \"GENERATED — do not edit. Run scripts/gen_wit_data.cljk.\n\n"
            "  The authoritative WIT bytes, embedded so every platform reads the same\n"
            "  string. This repository is a git dependency, so a consumer runs from its\n"
            "  own root and cannot resolve a relative path into this repo's wit/ tree;\n"
@@ -53,6 +53,6 @@
            (pr-str (into {} (map (juxt :var :path)) entries))
            ")\n"))
 
-(println "wrote src/kotoba/abi/wit_data.cljc with" (count entries) "embedded WIT file(s)")
+(println "wrote src/kotoba/abi/wit_data.cljk with" (count entries) "embedded WIT file(s)")
 (doseq [{:keys [var text]} entries]
   (println " " var (count text) "chars"))

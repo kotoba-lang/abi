@@ -27,7 +27,7 @@
         (is (some? resource) (str path " must be on the classpath"))
         (is (= (slurp resource) embedded)
             (str var-name " has drifted from " path
-                 " — regenerate with scripts/gen_wit_data.clj"))))))
+                 " — regenerate with scripts/gen_wit_data.cljk"))))))
 
 (deftest the-typed-capability-accessor-serves-the-pinned-world
   (testing "the accessor is no longer JVM-only, and still returns the same

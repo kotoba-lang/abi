@@ -4,7 +4,7 @@
   That file is `.clj` for one honest reason -- `embedded-wit-matches-the-file`
   compares each embedded string against the file it came from, through
   `clojure.java.io`, and the check needs the side that can still see the
-  original. `run-tests.cljs` says as much, and calls it `the one genuinely
+  original. `run-tests.cljk` says as much, and calls it `the one genuinely
   JVM-bound assertion in this repository's tests`. Singular, and correct.
 
   Everything around that assertion was JVM-bound only by living beside it, and
