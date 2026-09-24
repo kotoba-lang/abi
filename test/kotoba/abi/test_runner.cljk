@@ -1,5 +1,5 @@
 (ns kotoba.abi.test-runner
-  (:require [clojure.test :as test]
+  (:require [kotoba.test :as test]
             [kotoba.abi.contract-test]
             [kotoba.abi.wit-data-test]))
 
