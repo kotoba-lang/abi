@@ -5,7 +5,7 @@
 ;; the ClojureScript side, and could not be, because the file never got there.
 (ns kotoba.abi.contract-test
   (:require [kotoba.lang.text :as str]
-            #?(:clj  [clojure.test :refer [deftest is testing]]
+            #?(:clj  [kotoba.test :refer [deftest is testing]]
                :cljs [cljs.test :refer [deftest is testing]])
             [kotoba.abi.contract :as contract]))
 

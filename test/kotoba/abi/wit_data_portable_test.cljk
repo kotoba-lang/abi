@@ -16,7 +16,7 @@
 
   Nothing here reads a file. The embedded bytes are the subject, which is the
   whole point of embedding them."
-  (:require #?(:clj  [clojure.test :refer [deftest is testing]]
+  (:require #?(:clj  [kotoba.test :refer [deftest is testing]]
                :cljs [cljs.test :refer [deftest is testing] :include-macros true])
             [kotoba.abi.contract :as contract]
             [kotoba.abi.wit-data :as wit-data]))
