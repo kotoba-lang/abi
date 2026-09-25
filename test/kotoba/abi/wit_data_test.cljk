@@ -11,7 +11,7 @@
   `kotoba.abi.wit-data-portable-test` on 2026-09-10, including one that exists
   because `world-wit-v2` used to refuse under ClojureScript and had never run
   there."
-  (:require [clojure.java.io :as io]
+  (:require [kotoba.io :as io]
             [kotoba.test :refer [deftest is testing]]
             [kotoba.abi.contract :as contract]
             [kotoba.abi.wit-data :as wit-data]))

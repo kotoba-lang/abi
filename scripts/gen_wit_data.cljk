@@ -12,7 +12,7 @@
 ;;
 ;;   kbb -M -e "(load-file \"scripts/gen_wit_data.cljk\")"
 
-(require '[clojure.java.io :as io]
+(require '[kotoba.io :as io]
          '[kotoba.lang.text :as str])
 
 (def sources
