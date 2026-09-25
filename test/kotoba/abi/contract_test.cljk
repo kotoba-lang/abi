@@ -76,9 +76,9 @@
          (contract/component-import-key (wire-id 7))))
   (is (= :clock/now (:name (contract/typed-capability-operation (wire-id 7)))))
   (testing "and an id with no name still fails closed rather than being coerced"
-    (is (thrown? #?(:clj clojure.lang.ExceptionInfo :cljs js/Error)
+    (is (thrown? js/Error
                  (contract/capability-import-name (wire-id 99))))
-    (is (thrown? #?(:clj clojure.lang.ExceptionInfo :cljs js/Error)
+    (is (thrown? js/Error
                  (contract/capability-import-name :clock/now)))))
 
 (deftest a-world-of-three-wire-ids-is-rendered-in-numeric-order
@@ -114,7 +114,7 @@
   (is (= (set (range 11))
          (set (map :grant-index
                    (vals contract/typed-capability-operations)))))
-  (is (thrown? #?(:clj clojure.lang.ExceptionInfo :cljs js/Error)
+  (is (thrown? js/Error
                (contract/typed-capability-operation 8))))
 
 (deftest v2-world-never-labels-an-effect-as-a-v1-scalar-import
