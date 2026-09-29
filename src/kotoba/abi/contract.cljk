@@ -1,36 +1,120 @@
 (ns kotoba.abi.contract
   "Small, dependency-free constants shared by generated ABI consumers."
-  {:kotoba/export [ability-keys admission-keys ambient-wasi? approval-keys cancellation-required? capability-id capability-import-name capability-import-names capability-imports capability-lease-keys cid? component-authority-envelope-keys component-authority-event-keys component-authority-signing-payload component-import-key component-profiles component-target component-target-v2 component-world component-world-v2 conformance-result exact-import-grant-provider-sets? execution-identity-keys plan-keys policy-decision-keys portable-execution-v1-vectors profile? required-budget-keys stream-contract typed-capability-ids typed-capability-operation typed-capability-operations typed-capability-wit-v3 typed-capability-world-v3 valid-ability? valid-approval? valid-capability-lease? valid-component-authority-envelope? valid-component-authority-event? valid-execution-identity? valid-plan? valid-policy-decision? valid-stream-limits? wasi-version world-wit world-wit-v2]}
+  {:kotoba/export #?(:kotoba [ambient-wasi? cancellation-required? capability-id capability-import-name cid? component-target component-target-v2 component-world component-world-v2 profile? typed-capability-wit-v3 typed-capability-world-v3 wasi-version world-wit world-wit-v2]
+                     :default [ability-keys admission-keys ambient-wasi? approval-keys cancellation-required? capability-id capability-import-name capability-import-names capability-imports capability-lease-keys cid? component-authority-envelope-keys component-authority-event-keys component-authority-signing-payload component-import-key component-profiles component-target component-target-v2 component-world component-world-v2 conformance-result exact-import-grant-provider-sets? execution-identity-keys plan-keys policy-decision-keys portable-execution-v1-vectors profile? required-budget-keys stream-contract typed-capability-ids typed-capability-operation typed-capability-operations typed-capability-wit-v3 typed-capability-world-v3 valid-ability? valid-approval? valid-capability-lease? valid-component-authority-envelope? valid-component-authority-event? valid-execution-identity? valid-plan? valid-policy-decision? valid-stream-limits? wasi-version world-wit world-wit-v2])}
   (:require [kotoba.abi.wit-data :as wit-data]))
 
-(def component-world "kotoba:app/kotoba-app@0.1.0")
-(def component-target :wasm-component-kotoba-v1)
-(def component-world-v2 "kotoba:app/kotoba-app@0.2.0")
-(def component-target-v2 :wasm-component-kotoba-v2)
-(def typed-capability-world-v3 "aiueos:capability/application@0.3.0")
-(def wasi-version "0.3.0")
-(def ambient-wasi? false)
+;; ── the Kotoba reading of this file ─────────────────────────────────────────
+;; `#?(:kotoba A :default B)`: the Kotoba reader takes A, the JVM and
+;; ClojureScript readers take B, so every host body below is what it was.
+;; The Kotoba surface is the part of the contract that is scalars and text: the
+;; world names and versions (a constant is a zero-argument function there, since
+;; an :export names a function), the capability-id -> import-name table, the
+;; two WIT renderers, `cid?` and the profile predicates. What the hosts throw
+;; for an unknown capability id a Kotoba function traps (`assert`). The
+;; descriptors and their validators (`valid-plan?`, `valid-approval?`, ...,
+;; `typed-capability-operations`, `portable-execution-v1-vectors`) are EDN maps
+;; whose shape is only known at run time and exist on the hosts only.
+
+#?(:kotoba
+   (defn- import-name
+     "The WIT import name of capability id ID, or \"\"."
+     [id :i64] :string
+     (cond (= id 1) "aiueos-identity-sign" (= id 2) "aiueos-identity-verify"
+           (= id 3) "aiueos-hash-sha256" (= id 4) "aiueos-http-post"
+           (= id 5) "aiueos-log-read" (= id 6) "aiueos-log-append"
+           (= id 7) "aiueos-clock-now" (= id 8) "aiueos-state-transact"
+           (= id 9) "aiueos-ui-commit" (= id 10) "aiueos-ui-next-event"
+           (= id 11) "aiueos-llm-generate" (= id 12) "aiueos-storage-transact"
+           (= id 13) "aiueos-http-get-stream" (= id 14) "aiueos-object-get-stream"
+           (= id 15) "aiueos-object-put-block" (= id 16) "aiueos-object-compare-and-set-ref"
+           (= id 17) "aiueos-http-accept" (= id 18) "aiueos-http-reply"
+           :else "")))
+
+#?(:kotoba
+(defn component-world [] :string "kotoba:app/kotoba-app@0.1.0"))
+
+#?(:kotoba nil
+   :default
+(def component-world "kotoba:app/kotoba-app@0.1.0"))
+#?(:kotoba
+(defn component-target [] :keyword :wasm-component-kotoba-v1))
+
+#?(:kotoba nil
+   :default
+(def component-target :wasm-component-kotoba-v1))
+#?(:kotoba
+(defn component-world-v2 [] :string "kotoba:app/kotoba-app@0.2.0"))
+
+#?(:kotoba nil
+   :default
+(def component-world-v2 "kotoba:app/kotoba-app@0.2.0"))
+#?(:kotoba
+(defn component-target-v2 [] :keyword :wasm-component-kotoba-v2))
+
+#?(:kotoba nil
+   :default
+(def component-target-v2 :wasm-component-kotoba-v2))
+#?(:kotoba
+(defn typed-capability-world-v3 [] :string "aiueos:capability/application@0.3.0"))
+
+#?(:kotoba nil
+   :default
+(def typed-capability-world-v3 "aiueos:capability/application@0.3.0"))
+#?(:kotoba
+(defn wasi-version [] :string "0.3.0"))
+
+#?(:kotoba nil
+   :default
+(def wasi-version "0.3.0"))
+#?(:kotoba
+(defn ambient-wasi? [] :bool false))
+
+#?(:kotoba nil
+   :default
+(def ambient-wasi? false))
 
 ;; Admission is intentionally an ABI concern: every compiler and runtime
 ;; adapter must agree on this envelope before a Component is linked. Identity
 ;; verification and concrete engine execution remain local runtime concerns.
+#?(:kotoba nil
+   :default
 (def admission-keys
   #{:target :wasi-version :profile :imports :exports :grants
-    :provider-bindings :abilities :runtime-bindings :ambient-wasi :budgets :identity})
+    :provider-bindings :abilities :runtime-bindings :ambient-wasi :budgets :identity}))
 
+#?(:kotoba nil
+   :default
 (def component-profiles
   {:sync {:required-budgets [:fuel :memory-pages]}
    :async {:required-budgets [:fuel :memory-pages :deadline-ms :max-items :max-bytes]
-           :cancellation :required}})
+           :cancellation :required}}))
 
+#?(:kotoba
+(defn profile?
+  "Is PROFILE one of the component profiles?"
+  [profile :keyword] :bool
+  (or (= profile :sync) (= profile :async))))
+
+#?(:kotoba nil
+   :default
 (defn profile? [profile]
-  (contains? component-profiles profile))
+  (contains? component-profiles profile)))
 
+#?(:kotoba nil
+   :default
 (defn required-budget-keys [profile]
-  (get-in component-profiles [profile :required-budgets]))
+  (get-in component-profiles [profile :required-budgets])))
 
+#?(:kotoba
+(defn cancellation-required?
+  [profile :keyword] :bool
+  (= profile :async)))
+
+#?(:kotoba nil
+   :default
 (defn cancellation-required? [profile]
-  (= :required (get-in component-profiles [profile :cancellation])))
+  (= :required (get-in component-profiles [profile :cancellation]))))
 
 ;; Ids 1-7 are the operations `aiueos:capability@0.3.0` (wit/aiueos-capability-v2)
 ;; defines as `grant-request` cases and that a runtime host can execute today.
@@ -56,6 +140,8 @@
 ;; Ids 17-18 are HTTP ingress lifecycle (host injects / guest polls accept +
 ;; reply). Like application-profile 8-12 they are named for Component import
 ;; emission only; they are not grant-request cases in the v0.3 WIT table.
+#?(:kotoba nil
+   :default
 (def capability-import-names
   {1 "aiueos-identity-sign"
    2 "aiueos-identity-verify"
@@ -74,8 +160,16 @@
    15 "aiueos-object-put-block"
    16 "aiueos-object-compare-and-set-ref"
    17 "aiueos-http-accept"
-   18 "aiueos-http-reply"})
+   18 "aiueos-http-reply"}))
 
+#?(:kotoba
+(defn capability-id
+  "The plain-integer form of a capability wire id (an i64 is one already)."
+  [id :i64] :i64
+  id))
+
+#?(:kotoba nil
+   :default
 (defn capability-id
   "The plain-integer form of a capability wire id.
 
@@ -104,12 +198,14 @@
      :cljs (if (and (some? id)
                     (try (= (.-constructor id) js/BigInt) (catch :default _ false)))
              (js/Number id)
-             id)))
+             id))))
 
 
 ;; Exact routing for `aiueos:capability@0.3.0`. Historical application-profile
 ;; ids 8-12 intentionally remain outside this table: a valid legacy import is
 ;; not automatically a typed v0.3 operation.
+#?(:kotoba nil
+   :default
 (def typed-capability-operations
   {1 {:name :identity/sign :import "aiueos-identity-sign"
       :interface "identity" :function "sign" :grant-request "identity-sign"
@@ -159,39 +255,53 @@
        :grant-request "object-compare-and-set-ref"
        :grant-index 10
        :request :object-compare-and-set-ref-request
-       :response :object-compare-and-set-ref-response}})
+       :response :object-compare-and-set-ref-response}}))
 
-(def typed-capability-ids (set (keys typed-capability-operations)))
+#?(:kotoba nil
+   :default
+(def typed-capability-ids (set (keys typed-capability-operations))))
 
+#?(:kotoba nil
+   :default
 (defn typed-capability-operation
   "Resolve an id to its exact typed v0.3 operation. Unknown and legacy-only
   ids fail closed."
   [id]
   (or (get typed-capability-operations (capability-id id))
       (throw (ex-info "capability has no typed v0.3 operation"
-                      {:phase :component-abi-v3 :capability-id id}))))
+                      {:phase :component-abi-v3 :capability-id id})))))
 
+#?(:kotoba nil
+   :default
 (def stream-contract
   {:format :kotoba.stream/bytes-v1
    :task :poll-cancel
    :stream :pull-cancel
    :required-limits #{:deadline-ms :max-items :max-bytes}
    :zero-copy? false
-   :ambient-executor? false})
+   :ambient-executor? false}))
 
+#?(:kotoba nil
+   :default
 (defn valid-stream-limits?
   [limits]
   (and (map? limits)
        (= #{:deadline-ms :max-items :max-bytes} (set (keys limits)))
        (every? #(pos-int? (get limits %))
-               [:deadline-ms :max-items :max-bytes])))
+               [:deadline-ms :max-items :max-bytes]))))
 
+#?(:kotoba nil
+   :default
 (def capability-imports
-  (->> capability-import-names vals (map keyword) set))
+  (->> capability-import-names vals (map keyword) set)))
 
+#?(:kotoba nil
+   :default
 (def ability-keys
-  #{:target :operation :max-bytes :max-items :deadline-ms :audit-id})
+  #{:target :operation :max-bytes :max-items :deadline-ms :audit-id}))
 
+#?(:kotoba nil
+   :default
 (defn valid-ability?
   "Validate the exact, bounded descriptor attached to one named Component
   import. This is data validation only; a runtime must still enforce the
@@ -203,8 +313,19 @@
        (keyword? (:operation ability))
        (string? (:audit-id ability)) (seq (:audit-id ability))
        (every? #(pos-int? (get ability %))
-               [:max-bytes :max-items :deadline-ms])))
+               [:max-bytes :max-items :deadline-ms]))))
 
+#?(:kotoba
+(defn capability-import-name
+  "Resolve a compiler-local capability id to its portable WIT import name.
+  Traps on an unknown id, where the hosts throw."
+  [id :i64] :string
+  (let [nm (import-name id)]
+    (do (assert (> (string-byte-length nm) 0))
+        nm))))
+
+#?(:kotoba nil
+   :default
 (defn capability-import-name
   "Resolve a compiler-local capability id to its portable WIT import name.
   Unknown ids are a compile-time error; an adapter must never turn one into a
@@ -212,11 +333,51 @@
   [id]
   (or (get capability-import-names (capability-id id))
       (throw (ex-info "Component capability has no named ABI import"
-                      {:phase :component-abi :capability-id id}))))
+                      {:phase :component-abi :capability-id id})))))
 
+#?(:kotoba nil
+   :default
 (defn component-import-key [id]
-  (keyword "aiueos.component" (capability-import-name id)))
+  (keyword "aiueos.component" (capability-import-name id))))
 
+#?(:kotoba
+(defn- insert-sorted [v :vector-i64 x :i64] :vector-i64
+  (let [n (vector-count v)]
+    (loop [i 0 out (vector-i64) placed false]
+      (if (>= i n)
+        (if placed out (vector-conj out x))
+        (let [y (vector-at v i)]
+          (if (and (not placed) (< x y))
+            (recur (+ i 1) (vector-conj (vector-conj out x) y) true)
+            (recur (+ i 1) (vector-conj out y) placed))))))))
+
+#?(:kotoba
+(defn- sorted-ids [ids :vector-i64] :vector-i64
+  (let [n (vector-count ids)]
+    (loop [i 0 out (vector-i64)]
+      (if (>= i n) out (recur (+ i 1) (insert-sorted out (vector-at ids i))))))))
+
+#?(:kotoba
+(defn- import-lines [ids :vector-i64] :string
+  (let [n (vector-count ids)]
+    (loop [i 0 acc ""]
+      (if (>= i n)
+        acc
+        (recur (+ i 1)
+               (string-concat acc (string-concat (string-concat "  import " (capability-import-name (vector-at ids i)))
+                                                 ": func(value: s64) -> s64;\n"))))))))
+
+#?(:kotoba
+(defn world-wit
+  "Render the exact compiler Component world for a closed set of capability
+  ids. Each effect is a separately named WIT import."
+  [capability-ids :vector-i64] :string
+  (string-concat
+   (string-concat "package kotoba:app@0.1.0;\n\nworld kotoba-app {\n" (import-lines (sorted-ids capability-ids)))
+   "  export main: func() -> s64;\n}\n")))
+
+#?(:kotoba nil
+   :default
 (defn world-wit
   "Render the exact compiler Component world for a closed set of capability
   ids. Each effect is a separately named WIT import; no call can acquire
@@ -228,10 +389,24 @@
                        ;; `sort` is where a set of BigInt ids threw, and it
                        ;; threw before a single import name was resolved.
                        (sort (map capability-id capability-ids))))
-       "  export main: func() -> s64;\n}\n"))
+       "  export main: func() -> s64;\n}\n")))
 
-(declare typed-capability-wit-v3)
+#?(:kotoba nil
+   :default
+(declare typed-capability-wit-v3))
 
+#?(:kotoba
+(defn world-wit-v2
+  "Render the pure v2 world, or return the authoritative v0.3 capability world
+  for an effectful consumer."
+  [capability-ids :vector-i64] :string
+  (if (> (vector-count capability-ids) 0)
+    (typed-capability-wit-v3)
+    (string-concat "package kotoba:app@0.2.0;\n\nworld kotoba-app {\n"
+                   "  export main: func() -> s64;\n}\n"))))
+
+#?(:kotoba nil
+   :default
 (defn world-wit-v2
   "Render the pure v2 world, or return the authoritative v0.3 capability world
   for an effectful JVM compiler/runtime consumer. It never reuses v1 scalar
@@ -246,8 +421,16 @@
   (if (seq capability-ids)
     (typed-capability-wit-v3)
     (str "package kotoba:app@0.2.0;\n\nworld kotoba-app {\n"
-         "  export main: func() -> s64;\n}\n")))
+         "  export main: func() -> s64;\n}\n"))))
 
+#?(:kotoba
+(defn typed-capability-wit-v3
+  "The authoritative typed capability WIT bytes from this pinned ABI dependency."
+  [] :string
+  (wit-data/aiueos-capability-v2-wit)))
+
+#?(:kotoba nil
+   :default
 (defn typed-capability-wit-v3
   "Return the authoritative typed capability WIT bytes from this pinned ABI
   dependency. Compiler consumers must copy this exact source into their
@@ -265,8 +448,10 @@
   platforms byte-identical rather than merely intended to be;
   `kotoba.abi.wit-data-test` asserts the embedded copy still equals the file."
   []
-  wit-data/aiueos-capability-v2-wit)
+  wit-data/aiueos-capability-v2-wit))
 
+#?(:kotoba nil
+   :default
 (defn exact-import-grant-provider-sets?
   "True only when declared imports, grants, and provider binding keys agree.
   This is the invariant that all runtime adapters must preserve before linking."
@@ -274,40 +459,54 @@
   (and (set? imports)
        (set? grants)
        (map? providers)
-       (= imports grants (set (keys providers)))))
+       (= imports grants (set (keys providers))))))
 
 ;; Portable-host execution identity. These values are intentionally only
 ;; descriptors: a guest never receives a serializable host capability handle.
+#?(:kotoba nil
+   :default
 (def plan-keys
   #{:format :plan-cid :code-closure-cid :artifact-cid :compiler-contract
-    :requested-effects :requested-resources :input-cid :budget})
+    :requested-effects :requested-resources :input-cid :budget}))
 
+#?(:kotoba nil
+   :default
 (def policy-decision-keys
   #{:format :decision-cid :plan-cid :policy-cid :db-basis :result :reasons
-    :issued-at :expires-at})
+    :issued-at :expires-at}))
 
+#?(:kotoba nil
+   :default
 (def capability-lease-keys
   #{:format :capability-cid :execution-identity-cid :component-cid :resource-cid
-    :purpose :expires-at :uses :transfer :delegation-depth})
+    :purpose :expires-at :uses :transfer :delegation-depth}))
 
+#?(:kotoba nil
+   :default
 (def approval-keys
   #{:format :approval-cid :plan-cid :policy-cid :db-basis :resources
-    :input-cid :approver-cid :issued-at :expires-at})
+    :input-cid :approver-cid :issued-at :expires-at}))
 
+#?(:kotoba nil
+   :default
 (def execution-identity-keys
   #{:format :plan-cid :code-closure-cid :artifact-cid :compiler-contract
     :component-cid :wit-world-cid :package-lock-cid :policy-cid
     :policy-decision-cid :db-basis :grant-cids :approval-cids
-    :runtime-identity :input-cid :outcome-cid :host-receipt-cids})
+    :runtime-identity :input-cid :outcome-cid :host-receipt-cids}))
 
+#?(:kotoba nil
+   :default
 (def component-authority-event-keys
   #{:murakumo.component/version :murakumo.component/event
     :murakumo.component/component-cid :murakumo.component/epoch
-    :murakumo.component/sequence :murakumo.component/node})
+    :murakumo.component/sequence :murakumo.component/node}))
 
+#?(:kotoba nil
+   :default
 (def component-authority-envelope-keys
   #{:format :algorithm :key-id :issuer :audience :issued-at-ms
-    :event :signature})
+    :event :signature}))
 
 ;; --- CID identity -----------------------------------------------------------
 ;;
@@ -329,11 +528,15 @@
 ;; pulling in io-multiformats. That is ~40 lines against a security boundary
 ;; the whole ABI rests on.
 
+#?(:kotoba nil
+   :default
 (def ^:private base32-value
   "RFC 4648 base32, lowercase, unpadded — the `b` multibase alphabet. A map
   rather than `.indexOf` so the decode stays interop-free and portable."
-  (into {} (map-indexed (fn [i c] [c i]) "abcdefghijklmnopqrstuvwxyz234567")))
+  (into {} (map-indexed (fn [i c] [c i]) "abcdefghijklmnopqrstuvwxyz234567"))))
 
+#?(:kotoba nil
+   :default
 (defn- base32-decode
   "Returns a vector of byte values, or nil if any character is outside the
   alphabet."
@@ -351,8 +554,10 @@
                      (conj out (bit-and 0xff (bit-shift-right acc bits')))))
             (recur (rest cs) acc bits out)))
         nil)
-      out)))
+      out))))
 
+#?(:kotoba nil
+   :default
 (defn- read-varint
   "Unsigned LEB128 at `offset`. Returns [value next-offset], or nil if the
   bytes run out before the continuation bit clears."
@@ -365,8 +570,85 @@
           (when (< shift 56)
             (recur (inc offset)
                    (bit-or value (bit-shift-left (bit-and b 0x7f) shift))
-                   (+ shift 7))))))))
+                   (+ shift 7)))))))))
 
+#?(:kotoba
+(defn- b32-val [c :i64] :i64
+  (cond (and (>= c 97) (<= c 122)) (- c 97)
+        (and (>= c 50) (<= c 55)) (- c 24)
+        :else -1)))
+
+#?(:kotoba
+(defn- b32-valid? [text :string from :i64] :bool
+  (let [n (string-byte-length text)]
+    (loop [i from]
+      (cond (>= i n) true
+            (< (b32-val (string-code-point-at text i)) 0) false
+            :else (recur (+ i 1)))))))
+
+#?(:kotoba
+(defn- b32-decode [text :string from :i64] :vector-i64
+  (let [n (string-byte-length text)]
+    (loop [i from acc 0 bits 0 out (vector-i64)]
+      (if (>= i n)
+        out
+        (let [acc2 (bit-or (i64-shift-left acc 5) (b32-val (string-code-point-at text i)))
+              bits2 (+ bits 5)]
+          (if (>= bits2 8)
+            (let [bits3 (- bits2 8)]
+              (recur (+ i 1)
+                     (bit-and acc2 (- (i64-shift-left 1 bits3) 1))
+                     bits3
+                     (vector-conj out (bit-and 255 (i64-shift-right acc2 bits3)))))
+            (recur (+ i 1) acc2 bits2 out))))))))
+
+#?(:kotoba
+(defn- varint-at
+  "Unsigned LEB128 at OFFSET of BS as `[value next-offset]`; next is -1 if the
+  bytes run out (or the run is too long) before the continuation bit clears."
+  [bs :vector-i64 offset0 :i64] [:vector [:i64 :i64]]
+  (loop [offset offset0 value 0 shift 0]
+    (if (< offset (vector-count bs))
+      (let [b (bit-and (vector-at bs offset) 255)]
+        (if (< b 128)
+          (hetero-vector [:vector [:i64 :i64]] (bit-or value (i64-shift-left b shift)) (+ offset 1))
+          (if (< shift 56)
+            (recur (+ offset 1) (bit-or value (i64-shift-left (bit-and b 127) shift)) (+ shift 7))
+            (hetero-vector [:vector [:i64 :i64]] 0 -1))))
+      (hetero-vector [:vector [:i64 :i64]] 0 -1)))))
+
+#?(:kotoba
+(defn- cid-fields? [bs :vector-i64] :bool
+  (let [a (varint-at bs 0)
+        off1 (hetero-vector-at [:vector [:i64 :i64]] a 1)]
+    (and (>= off1 0)
+         (let [b (varint-at bs off1)
+               off2 (hetero-vector-at [:vector [:i64 :i64]] b 1)]
+           (and (>= off2 0)
+                (let [c (varint-at bs off2)
+                      off3 (hetero-vector-at [:vector [:i64 :i64]] c 1)]
+                  (and (>= off3 0)
+                       (let [d (varint-at bs off3)
+                             off4 (hetero-vector-at [:vector [:i64 :i64]] d 1)]
+                         (and (>= off4 0)
+                              (= 1 (hetero-vector-at [:vector [:i64 :i64]] a 0))
+                              (> (hetero-vector-at [:vector [:i64 :i64]] b 0) 0)
+                              (> (hetero-vector-at [:vector [:i64 :i64]] c 0) 0)
+                              (> (hetero-vector-at [:vector [:i64 :i64]] d 0) 0)
+                              (= (hetero-vector-at [:vector [:i64 :i64]] d 0)
+                                 (- (vector-count bs) off4))))))))))))
+
+#?(:kotoba
+(defn cid?
+  "True only for a fully decodable CIDv1 with a well-formed multihash."
+  [value :string] :bool
+  (and (> (string-byte-length value) 1)
+       (= 98 (string-code-point-at value 0))
+       (b32-valid? value 1)
+       (cid-fields? (b32-decode value 1)))))
+
+#?(:kotoba nil
+   :default
 (defn cid?
   "True only for a fully decodable CIDv1 with a well-formed multihash.
 
@@ -388,11 +670,15 @@
                        (pos? codec)
                        (pos? hash-fn)
                        (pos? hash-len)
-                       (= hash-len (- (count bs) off4)))))))))))
+                       (= hash-len (- (count bs) off4))))))))))))
 
+#?(:kotoba nil
+   :default
 (defn- cid-vector? [value]
-  (and (vector? value) (every? cid? value) (= (count value) (count (distinct value)))))
+  (and (vector? value) (every? cid? value) (= (count value) (count (distinct value))))))
 
+#?(:kotoba nil
+   :default
 (defn valid-plan?
   "Validate the portable, bounded plan descriptor. Policy evaluation is a
   host concern; this contract only prevents shape drift before that boundary."
@@ -404,8 +690,10 @@
                             :compiler-contract :input-cid) plan))
        (set? (:requested-effects plan))
        (set? (:requested-resources plan))
-       (map? (:budget plan))))
+       (map? (:budget plan)))))
 
+#?(:kotoba nil
+   :default
 (defn valid-policy-decision?
   "Validate a deterministic, basis-bound policy decision. A `:permit` is not
   authority by itself: the host must still issue and enforce scoped leases."
@@ -417,8 +705,10 @@
        (contains? #{:permit :deny} (:result decision))
        (vector? (:reasons decision))
        (string? (:issued-at decision))
-       (string? (:expires-at decision))))
+       (string? (:expires-at decision)))))
 
+#?(:kotoba nil
+   :default
 (defn valid-capability-lease?
   "Validate the serializable audit descriptor for one host-managed capability.
   There is deliberately no handle/token field: possession of this descriptor
@@ -433,8 +723,10 @@
        (string? (:expires-at lease))
        (pos-int? (:uses lease))
        (contains? #{:non-transferable :same-component} (:transfer lease))
-       (nat-int? (:delegation-depth lease))))
+       (nat-int? (:delegation-depth lease)))))
 
+#?(:kotoba nil
+   :default
 (defn valid-approval?
   "Validate an immutable human/organizational approval witness. An approval is
   authority only for the exact plan, policy, basis, input and resource set it
@@ -448,8 +740,10 @@
        (set? (:resources approval))
        (seq (:resources approval))
        (string? (:issued-at approval))
-       (string? (:expires-at approval))))
+       (string? (:expires-at approval)))))
 
+#?(:kotoba nil
+   :default
 (defn valid-execution-identity?
   "Validate the immutable identity shared by compiler, authority, runtime and
   fact-store. Component fields are both present or both nil for explicitly
@@ -465,8 +759,10 @@
        (or (and (cid? (:component-cid identity)) (cid? (:wit-world-cid identity)))
            (and (nil? (:component-cid identity)) (nil? (:wit-world-cid identity))))
        (or (cid? (:plan-cid identity)) (nil? (:plan-cid identity)))
-       (every? cid-vector? ((juxt :grant-cids :approval-cids :host-receipt-cids) identity))))
+       (every? cid-vector? ((juxt :grant-cids :approval-cids :host-receipt-cids) identity)))))
 
+#?(:kotoba nil
+   :default
 (defn valid-component-authority-event?
   "Validate Murakumo's portable placement-fence event. Authentication and
   replay/order enforcement remain host transport concerns; this exact shape
@@ -482,8 +778,10 @@
        (let [node (:murakumo.component/node event)]
          (if (= :placed (:murakumo.component/event event))
            (and (string? node) (seq node) (<= (count node) 4096))
-           (nil? node)))))
+           (nil? node))))))
 
+#?(:kotoba nil
+   :default
 (defn component-authority-signing-payload
   "Canonical, language-portable value covered by an authority signature.
   It is a vector rather than a map so map iteration order cannot change bytes."
@@ -495,8 +793,10 @@
      (:murakumo.component/component-cid event)
      (:murakumo.component/epoch event)
      (:murakumo.component/sequence event)
-     (:murakumo.component/node event)]]))
+     (:murakumo.component/node event)]])))
 
+#?(:kotoba nil
+   :default
 (defn valid-component-authority-envelope?
   "Validate the exact signed Murakumo-to-Kototama envelope. Public-key trust,
   signature verification, clock skew, and replay enforcement are runtime
@@ -511,11 +811,13 @@
        (pos-int? (:issued-at-ms envelope))
        (valid-component-authority-event? (:event envelope))
        (string? (:signature envelope))
-       (boolean (re-matches #"[0-9a-f]{128}" (:signature envelope)))))
+       (boolean (re-matches #"[0-9a-f]{128}" (:signature envelope))))))
 
 ;; These vectors are intentionally plain EDN-shaped values.  A host may use
 ;; any codec/language, but must obtain the same accept/reject result before it
 ;; issues a non-serializable capability handle or invokes an engine.
+#?(:kotoba nil
+   :default
 (def portable-execution-v1-vectors
   ;; The placeholder that stood here, "bafyportablehostcontract", is not a CID.
   ;; These vectors are what another implementation reproduces to prove it
@@ -562,8 +864,10 @@
       :value (assoc approval :policy-cid nil)}
      {:id :identity/valid-component :kind :execution-identity :expect :accept :value identity}
      {:id :identity/partial-component :kind :execution-identity :expect :reject
-      :value (assoc identity :wit-world-cid nil)}]))
+      :value (assoc identity :wit-world-cid nil)}])))
 
+#?(:kotoba nil
+   :default
 (defn conformance-result
   "Return the schema-level result for one `portable-execution-v1-vectors`
   entry. Engine hosts add their own component/lease lifecycle checks after
@@ -575,4 +879,4 @@
     :capability-lease (valid-capability-lease? value)
     :approval (valid-approval? value)
     :execution-identity (valid-execution-identity? value)
-    false))
+    false)))
