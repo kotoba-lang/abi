@@ -42,16 +42,20 @@
            "  own root and cannot resolve a relative path into this repo's wit/ tree;\n"
            "  embedding is what makes the JVM and ClojureScript copies byte-identical\n"
            "  rather than merely intended to be.\n\n"
-           "  kotoba.abi.wit-data-test asserts each string still equals its file.\")\n\n"
+           "  kotoba.abi.wit-data-test asserts each string still equals its file.\"\n"
+           "  {:kotoba/export #?(:kotoba [" (str/join " " (map (comp str :var) entries)) "] :default [" (str/join " " (map (comp str :var) entries)) " files])})\n\n"
            (str/join "\n\n"
                      (map (fn [{:keys [var path note text]}]
                             (str ";; " path "\n"
                                  ";; " (str/replace (str/trim note) #"\s+" " ") "\n"
-                                 "(def " var "\n  " (pr-str text) ")"))
+                                 "(def ^:private " var "-text\n  " (pr-str text) ")\n\n"
+                                 ";; a var on the host, a zero-argument function on Kotoba (an :export names a function)\n"
+                                 "#?(:kotoba (defn " var " [] :string " var "-text)\n"
+                                 "   :default (def " var " " var "-text))"))
                           entries))
-           "\n\n(def files\n  \"var name -> classpath path, for the drift test.\"\n  '"
+           "\n\n#?(:default\n(def files\n  \"var name -> classpath path, for the drift test.\"\n  '"
            (pr-str (into {} (map (juxt :var :path)) entries))
-           ")\n"))
+           "))\n"))
 
 (println "wrote src/kotoba/abi/wit_data.cljk with" (count entries) "embedded WIT file(s)")
 (doseq [{:keys [var text]} entries]
