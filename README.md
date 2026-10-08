@@ -14,10 +14,10 @@ kotoba-lang/kotoba + compiler     source language and Component producer
                  │
                  ▼
               abi                WIT + artifact/grant contract
-        ┌────────┼─────────┐
-        ▼        ▼         ▼
-    kototama   aiueos   murakumo
-    runtime    authority control plane
+        ┌────────┼───────────────┐
+        ▼        ▼               ▼
+    kototama   grant · aiueos   sahai · murakumo
+    runtime    decide · enforce placement · inference fleet
 ```
 
 The only permitted runtime path is:
@@ -25,8 +25,8 @@ The only permitted runtime path is:
 ```text
 compiler → signed Component + declared imports
          → kototama validates, links, budgets, and executes
-         → aiueos decides and provides each explicitly granted import
-         ← murakumo places and observes the workload; it grants no authority
+         → grant decides each declared import; aiueos enforces and provides it
+         ← sahai places the workload (murakumo for its inference fleet); neither grants authority
 ```
 
 ## Contents
