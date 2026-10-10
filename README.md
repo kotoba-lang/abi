@@ -7,6 +7,22 @@ projects: WIT worlds, capability names, component-admission envelopes, artifact
 identity bindings, and conformance vectors.  It deliberately owns neither a
 Wasm engine, policy decision, device driver, scheduler, nor deployment client.
 
+## Lisp machine architecture
+
+AiueOS is the OS for a modern Kotoba Lisp machine in development. Kototama
+is its implementation-independent Lisp VM contract: closed S-expression
+computation, IPLD state, bounded authority and content-addressed receipts.
+Amu checks and compiles code; grant decides permission; runtime hosts and OS
+mechanisms enforce the admitted boundary. Kototama also has hosted engines
+and does not require AiueOS for every execution.
+
+The [stack architecture](https://github.com/kotoba-lang/kotoba-lang/blob/main/docs/stack-architecture.md) separates responsibility, source/library
+and artifact dependencies. Its [composition contract](https://github.com/kotoba-lang/kotoba-lang/blob/main/lang/stack-architecture.edn) routes
+to each owner's specification; it is not a new language or runtime semantics.
+"Modern Lisp machine" describes the architectural direction. It does not
+certify a complete integrated debugger, live system modification, full heap
+image restore, selfhost compiler or physical-machine qualification.
+
 ## Stack
 
 ```text
@@ -20,7 +36,7 @@ kotoba-lang/kotoba + compiler     source language and Component producer
     runtime    decide · enforce placement · inference fleet
 ```
 
-The only permitted runtime path is:
+The Component-profile runtime path is:
 
 ```text
 compiler → signed Component + declared imports
@@ -28,6 +44,9 @@ compiler → signed Component + declared imports
          → grant decides each declared import; aiueos enforces and provides it
          ← sahai places the workload (murakumo for its inference fleet); neither grants authority
 ```
+
+Native engines implement the same admission/VM boundary through their declared
+ABI. A Component illustration does not make AiueOS mandatory for hosted engines.
 
 ## Contents
 
