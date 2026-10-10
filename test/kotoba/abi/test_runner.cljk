@@ -1,10 +1,12 @@
 (ns kotoba.abi.test-runner
   (:require [kotoba.test :as test]
             [kotoba.abi.contract-test]
+            [kotoba.abi.split-test]
             [kotoba.abi.wit-data-test]))
 
 (defn -main [& _]
   (let [result (test/run-tests 'kotoba.abi.contract-test
+             'kotoba.abi.split-test
                                'kotoba.abi.wit-data-test)]
     (when (pos? (+ (:fail result) (:error result)))
       (System/exit 1))))

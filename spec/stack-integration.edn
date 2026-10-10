@@ -12,4 +12,8 @@
  :aliases-recorded-separately true
  :runtime-migration-performed false
  :runtime-schema-changed false
- :qualification-claim :none}
+ :qualification-claim :none
+ :implemented-entrypoint-split true
+ :v1-wire-unchanged true
+ :v2-default-runtime-admission false
+}
