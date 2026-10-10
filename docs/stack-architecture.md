@@ -1,0 +1,44 @@
+# abi: stack integration
+
+Status: accepted architecture direction, 2026-10-10. This document and
+[composition metadata](../spec/stack-integration.edn) describe ownership and
+future boundaries; they do not change runtime schemas or certify migration.
+
+## Responsibility
+
+Currently owns both portable descriptors and Component/WIT-specific fields. The adopted direction separates neutral contract entrypoints from target profiles; common execution descriptors have core-contracts as the candidate migration owner. WIT/Canonical ABI is a Component profile, not universal language semantics. Physical native, Script and EVM bindings remain distinct. No schema fields or hash identities are changed by this documentation.
+
+## Contract dependency direction
+
+Arrows are consumer → contract dependency. These are intended entrypoint
+boundaries, not whole-repository imports already achieved.
+
+```mermaid
+flowchart LR
+  Owner["abi: Versioned execution and target-profile contracts"]
+  Owner --> D0["neutral execution contracts"]
+```
+
+The measured selected-owner production dependencies at base `af5e5379d767c9172ddecbec1b2e76b84fdc58f6`
+are none among the selected 13 owners.
+This selection excludes other libraries; alias-only build/test imports remain
+separate in the [full observation](https://github.com/kotoba-lang/kotoba-lang/blob/main/lang/stack-dependency-observation.edn).
+
+## Shared architecture and refactor rules
+
+- [Whole stack and distributed flow](https://github.com/kotoba-lang/kotoba-lang/blob/main/docs/stack-architecture-target-neutral.ja.md)
+- [Machine-readable architecture direction](https://github.com/kotoba-lang/kotoba-lang/blob/main/lang/stack-architecture-target-neutral.edn)
+- [Current measured dependency graph](https://github.com/kotoba-lang/kotoba-lang/blob/main/docs/stack-dependencies-current.md)
+- [Coordinated refactor procedure](https://github.com/kotoba-lang/kotoba-lang/blob/main/docs/stack-refactor-procedure.md)
+- [Japanese presentation](https://github.com/kotoba-lang/kotoba-lang/blob/main/docs/presentations/kotoba-lisp-machine.ja.md)
+
+Target, host, distribution and consistency are independent selection axes; their
+Cartesian product is not a support matrix. Unknown/unqualified profiles fail
+closed. Preserve existing wire keys, CID rules and reader compatibility until
+a versioned migration. Migrate whole components and public closures; Q9 is
+JVM-free. Qualify actual artifacts, denied paths, limits and receipts per
+target × host × operation × consistency.
+
+Keep source dependencies, artifact flow, runtime composition and service
+relationships separate. No readiness follows for debugger/live editing, heap
+image restoration, selfhost, C-free production or physical hardware.
