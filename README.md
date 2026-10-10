@@ -134,3 +134,9 @@ Component v1/v2 bindings are implemented here; unknown targets/profiles refuse.
 Native/Script/EVM bindings must be owned and qualified by their selected backend,
 not encoded as nil WIT fields. V2 runtime admission is not enabled by this API
 refactor, and this is not Q9 source migration or target qualification.
+
+## Explicit v2 execution
+
+See [execution v2](docs/execution-v2.md) and [owner contract](spec/execution-v2.edn).
+New target bindings, authority-issued invocation/leases and authenticated admission
+are explicit APIs; existing v1 runtime defaults remain compatible.
