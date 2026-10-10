@@ -2,7 +2,7 @@
 {:stack.integration/version 1
  :status :accepted-architecture-direction
  :owner "kotoba-lang/abi"
- :role "Versioned execution and target-profile contracts"
+ :role "Versioned target profiles and v1 compatibility"
  :composition-authority "https://github.com/kotoba-lang/kotoba-lang/blob/main/lang/stack-architecture.edn"
  :architecture-direction "https://github.com/kotoba-lang/kotoba-lang/blob/main/lang/stack-architecture-target-neutral.edn"
  :refactor-procedure "https://github.com/kotoba-lang/kotoba-lang/blob/main/docs/stack-refactor-procedure.md"

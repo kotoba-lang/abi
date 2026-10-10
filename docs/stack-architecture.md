@@ -6,7 +6,14 @@ future boundaries; they do not change runtime schemas or certify migration.
 
 ## Responsibility
 
-Currently owns both portable descriptors and Component/WIT-specific fields. The adopted direction separates neutral contract entrypoints from target profiles; common execution descriptors have core-contracts as the candidate migration owner. WIT/Canonical ABI is a Component profile, not universal language semantics. Physical native, Script and EVM bindings remain distinct. No schema fields or hash identities are changed by this documentation.
+Owns versioned target profiles and legacy v1 compatibility. Neutral execution
+descriptors now belong to `kotoba.core.execution` in core-contracts (15 exports,
+zero source imports). `kotoba.abi.component` exposes 39 Component/WIT/WASI
+profile exports; `kotoba.abi.contract` preserves the original 46 exports and
+v1 wire/CID/signature/WIT semantics. Explicit Component binding/v1 projection
+connects the new neutral v2 identity without changing default runtime admission.
+Native, Script and EVM mechanisms remain in their selected backend/host owners.
+
 
 ## Contract dependency direction
 
@@ -15,12 +22,13 @@ boundaries, not whole-repository imports already achieved.
 
 ```mermaid
 flowchart LR
-  Owner["abi: Versioned execution and target-profile contracts"]
+  Owner["abi.component: versioned Component profile"]
   Owner --> D0["neutral execution contracts"]
 ```
 
 The measured selected-owner production dependencies at base `af5e5379d767c9172ddecbec1b2e76b84fdc58f6`
-are none among the selected 13 owners.
+were none among the selected 13 owners. The implemented split now adds a direct
+core-contracts dependency; see the refreshed current observation.
 This selection excludes other libraries; alias-only build/test imports remain
 separate in the [full observation](https://github.com/kotoba-lang/kotoba-lang/blob/main/lang/stack-dependency-observation.edn).
 
