@@ -25,16 +25,23 @@ image restore, selfhost compiler or physical-machine qualification.
 
 ## Stack
 
-```text
-kotoba-lang/kotoba + compiler     source language and Component producer
-                 │
-                 ▼
-              abi                WIT + artifact/grant contract
-        ┌────────┼───────────────┐
-        ▼        ▼               ▼
-    kototama   grant · aiueos   sahai · murakumo
-    runtime    decide · enforce placement · inference fleet
+Shared descriptors and target profiles are separate contract boundaries.
+The current repository contains both; the split is adopted direction, not a
+completed schema migration.
+
+```mermaid
+flowchart LR
+  AMU["AMU / selected backend"] --> Neutral["Neutral execution descriptors"]
+  Host["Selected execution host"] --> Neutral
+  AMU --> Profile["Selected ABI profile"]
+  Host --> Profile
+  Profile --> Neutral
+  Grant["grant: pure decisions"] --> Neutral
 ```
+
+WIT/Canonical ABI belongs to the Component profile. Native calling conventions,
+Script bridges and EVM ABI are distinct target bindings. The current WIT-bound
+fields are not silently made optional or renamed by this document.
 
 The Component-profile runtime path is:
 
@@ -95,3 +102,14 @@ New shared code earns a separate repository only when it has two or more
 independent consumers and can remain below this authority boundary.  Examples
 include generated WIT bindings or canonical artifact codecs.  Policy, engine,
 and control-plane code stay in their owning repositories.
+
+## Target-neutral and distributed stack architecture
+
+Currently owns both portable descriptors and Component/WIT-specific fields. The adopted direction separates neutral contract entrypoints from target profiles; common execution descriptors have core-contracts as the candidate migration owner. WIT/Canonical ABI is a Component profile, not universal language semantics. Physical native, Script and EVM bindings remain distinct. No schema fields or hash identities are changed by this documentation.
+
+See the [owner integration guide and dependency direction](docs/stack-architecture.md),
+[composition metadata](spec/stack-integration.edn), and
+[whole-stack refactor procedure](https://github.com/kotoba-lang/kotoba-lang/blob/main/docs/stack-refactor-procedure.md).
+The direction is adopted; runtime contract migration and qualification remain
+explicit, separately verified work. Tier labels are responsibility axes, not
+a single dependency ranking.

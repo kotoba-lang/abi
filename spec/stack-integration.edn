@@ -1,0 +1,15 @@
+;; Composition metadata only; existing owner runtime contracts retain authority.
+{:stack.integration/version 1
+ :status :accepted-architecture-direction
+ :owner "kotoba-lang/abi"
+ :role "Versioned execution and target-profile contracts"
+ :composition-authority "https://github.com/kotoba-lang/kotoba-lang/blob/main/lang/stack-architecture.edn"
+ :architecture-direction "https://github.com/kotoba-lang/kotoba-lang/blob/main/lang/stack-architecture-target-neutral.edn"
+ :refactor-procedure "https://github.com/kotoba-lang/kotoba-lang/blob/main/docs/stack-refactor-procedure.md"
+ :intended-entrypoint-dependencies ["neutral execution contracts"]
+ :observed-base "af5e5379d767c9172ddecbec1b2e76b84fdc58f6"
+ :observed-selected-direct []
+ :aliases-recorded-separately true
+ :runtime-migration-performed false
+ :runtime-schema-changed false
+ :qualification-claim :none}
