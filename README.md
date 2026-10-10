@@ -1,10 +1,10 @@
 # kotoba-lang/abi
 
-The versioned, implementation-free contract for the Kotoba execution stack.
+Versioned target profiles and compatibility contracts for the Kotoba execution stack.
 
-`abi` owns only data that must mean the same thing to independently released
-projects: WIT worlds, capability names, component-admission envelopes, artifact
-identity bindings, and conformance vectors.  It deliberately owns neither a
+`abi` owns Component/WIT worlds, physical capability import names,
+component-admission envelopes, profile bindings and legacy v1 wire codecs.
+Target-neutral descriptors are owned by `kotoba.core.execution` in core-contracts.  It deliberately owns neither a
 Wasm engine, policy decision, device driver, scheduler, nor deployment client.
 
 ## Lisp machine architecture
@@ -26,8 +26,9 @@ image restore, selfhost compiler or physical-machine qualification.
 ## Stack
 
 Shared descriptors and target profiles are separate contract boundaries.
-The current repository contains both; the split is adopted direction, not a
-completed schema migration.
+The public entrypoints are split: core-contracts owns neutral descriptors and
+abi owns Component profiles. Mixed v1 wire data remains an explicit compatibility
+codec; existing runtime admission is unchanged.
 
 ```mermaid
 flowchart LR
@@ -113,3 +114,23 @@ See the [owner integration guide and dependency direction](docs/stack-architectu
 The direction is adopted; runtime contract migration and qualification remain
 explicit, separately verified work. Tier labels are responsibility axes, not
 a single dependency ranking.
+
+## Implemented neutral / target-profile boundary
+
+`kotoba.core.execution` owns bounded semantic ability, stream, plan, policy and
+approval data, plus explicitly versioned neutral v2 identity/lease validators.
+Its complete source closure has no requires and imports no WIT, engines, DB,
+network or consensus. `:target` in an ability is a resource selector.
+
+`kotoba.abi.component` owns Component worlds/imports/admission/authority fences
+and the unchanged mixed v1 identity/lease codecs. `kotoba.abi.contract` preserves
+all 46 existing exports as compatibility aliases. New consumers choose an
+explicit entrypoint. No v1 block, signature, WIT output or existing runtime
+admission shape is rewritten automatically. V2 identities reference the CID of
+a target-owned binding; hosts must verify its bytes, profile, interface and
+artifact before granting authority. A v2 block needs a new CID/signature.
+
+Component v1/v2 bindings are implemented here; unknown targets/profiles refuse.
+Native/Script/EVM bindings must be owned and qualified by their selected backend,
+not encoded as nil WIT fields. V2 runtime admission is not enabled by this API
+refactor, and this is not Q9 source migration or target qualification.

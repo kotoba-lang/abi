@@ -42,3 +42,5 @@ target × host × operation × consistency.
 Keep source dependencies, artifact flow, runtime composition and service
 relationships separate. No readiness follows for debugger/live editing, heap
 image restoration, selfhost, C-free production or physical hardware.
+
+The implemented API boundary is specified in [component-profile.edn](../spec/component-profile.edn). Neutral source closure is measured separately from repository dependency closure. Existing package/codec helpers remain separate entrypoints.
