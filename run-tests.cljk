@@ -19,7 +19,9 @@
 ;; `kotoba.abi.wit-data-portable-test`, and they run here.
 (ns run-tests
   (:require [cljs.test :as t]
+            [kotoba.abi.app-world-test]
             [kotoba.abi.contract-test]
+            [kotoba.abi.mon-test]
             [kotoba.abi.split-test]
             [kotoba.abi.wit-data-portable-test]))
 
@@ -29,6 +31,8 @@
   (when (pos? (+ (or (:fail m) 0) (or (:error m) 0)))
     (set! (.-exitCode js/process) 1)))
 
-(t/run-tests 'kotoba.abi.contract-test
+(t/run-tests 'kotoba.abi.app-world-test
+             'kotoba.abi.contract-test
+             'kotoba.abi.mon-test
              'kotoba.abi.split-test
              'kotoba.abi.wit-data-portable-test)
