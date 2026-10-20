@@ -20,6 +20,7 @@
 (ns run-tests
   (:require [cljs.test :as t]
             [kotoba.abi.app-world-test]
+            [kotoba.abi.boundary-layout-test]
             [kotoba.abi.contract-test]
             [kotoba.abi.mon-test]
             [kotoba.abi.split-test]
@@ -32,6 +33,7 @@
     (set! (.-exitCode js/process) 1)))
 
 (t/run-tests 'kotoba.abi.app-world-test
+             'kotoba.abi.boundary-layout-test
              'kotoba.abi.contract-test
              'kotoba.abi.mon-test
              'kotoba.abi.split-test
