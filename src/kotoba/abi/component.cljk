@@ -239,7 +239,7 @@
   platforms byte-identical rather than merely intended to be;
   `kotoba.abi.wit-data-test` asserts the embedded copy still equals the file."
   []
-  wit-data/aiueos-capability-v2-wit)
+  (wit-data/aiueos-capability-v2-wit))
 
 (defn exact-import-grant-provider-sets?
   "True only when declared imports, grants, and provider binding keys agree.
