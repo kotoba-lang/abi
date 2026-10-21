@@ -81,6 +81,33 @@ ABI. A Component illustration does not make AiueOS mandatory for hosted engines.
 
 ## Dependency rule
 
+### Canonical WIT embedding
+
+`wit/aiueos-capability-v2/aiueos-capability.wit` owns the bytes embedded by
+`src/kotoba/abi/wit_data.kotoba`. `scripts/gen_wit_data.kotoba` renders that
+module and implements write/readback and `--check` through declared CLI,
+filesystem and output capabilities. Its compiled native entry accepts an
+absolute repository root and optional `--check`; it reads and writes only
+the fixed source and generated paths under that root. The host grant must
+bound those concrete paths.
+
+The `aiueos-capability-v2-wit` string and symbol-keyed `files` map retain their
+public names and values. The map uses the language's explicit
+`typed-map-new` / `symbol` constructors rather than reader quote syntax.
+The old CLJK generator and generated sibling are removed. Existing host test
+sources remain migration input, not native Q9/CDCI evidence.
+
+This is an unqualified source migration candidate. The current native
+frontend requires a function and rejects constants in namespace exports;
+the native project linker imports functions only. Preserving this module's
+two public values therefore still needs explicit library/value-interface
+support or a complete accessor/caller migration. A dummy function would not
+resolve that interface. The embedded candidate was rendered mechanically
+from the authoritative WIT; the Kotoba generator has not executed yet.
+Native compiler admission, selfhost-built generation/check execution and
+Definition CID equivalence receipts are required before release
+qualification. No JVM/Node/NBB/KBB/C fallback qualifies it.
+
 Each consumer pins an ABI release and may generate language bindings from WIT.
 No consumer may import another consumer's implementation merely to share a
 contract.  In particular, the compiler never imports the aiueos kernel;
