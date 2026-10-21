@@ -20,10 +20,10 @@
   (testing "a generated copy that silently drifted from its source would be
             worse than no copy, because consumers would compile against WIT
             that no longer exists in this repository"
-    (is (seq wit-data/files))
-    (doseq [[var-name path] wit-data/files]
+    (is (seq (wit-data/files)))
+    (doseq [[var-name path] (wit-data/files)]
       (let [resource (io/resource path)
-            embedded (var-get (resolve (symbol "kotoba.abi.wit-data" (name var-name))))]
+            embedded ((var-get (resolve (symbol "kotoba.abi.wit-data" (name var-name)))))]
         (is (some? resource) (str path " must be on the classpath"))
         (is (= (slurp resource) embedded)
             (str var-name " has drifted from " path

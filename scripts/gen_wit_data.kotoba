@@ -40,10 +40,10 @@
 
 (defn render-wit-data [text :string] :string
   (append
-   "(ns kotoba.abi.wit-data\n  \"GENERATED from wit/aiueos-capability-v2/aiueos-capability.wit by scripts/gen_wit_data.kotoba.\"\n  {:kotoba/export [aiueos-capability-v2-wit files]})\n\n(def aiueos-capability-v2-wit\n  "
+   "(ns kotoba.abi.wit-data\n  \"GENERATED from wit/aiueos-capability-v2/aiueos-capability.wit by scripts/gen_wit_data.kotoba.\"\n  {:kotoba/export [aiueos-capability-v2-wit files]})\n\n(defn aiueos-capability-v2-wit [] :string\n  "
    (append
     (source-string text)
-    ")\n\n(def files\n  \"Export symbol -> authoritative WIT resource path.\"\n  (typed-map-new [:map :symbol :string]\n                 (symbol \"aiueos-capability-v2-wit\")\n                 \"aiueos-capability-v2/aiueos-capability.wit\"))\n")))
+    ")\n\n(defn files\n  \"Export symbol -> authoritative WIT resource path.\"\n  [] [:map :symbol :string]\n  (typed-map-new [:map :symbol :string]\n                 (symbol \"aiueos-capability-v2-wit\")\n                 \"aiueos-capability-v2/aiueos-capability.wit\"))\n")))
 
 (defn- cli-arg [index :i64] :string
   (typed-cap-call :cli/args :string :string (string-from-i64 index)))

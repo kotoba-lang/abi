@@ -91,21 +91,25 @@ absolute repository root and optional `--check`; it reads and writes only
 the fixed source and generated paths under that root. The host grant must
 bound those concrete paths.
 
-The `aiueos-capability-v2-wit` string and symbol-keyed `files` map retain their
-public names and values. The map uses the language's explicit
-`typed-map-new` / `symbol` constructors rather than reader quote syntax.
+The public names are retained as zero-argument typed accessors:
+`(aiueos-capability-v2-wit)` returns the same string and `(files)` returns
+the same symbol-keyed map. Callers must invoke these functions; reading the
+old vars directly is no longer the source API. The map uses the language's
+explicit `typed-map-new` / `symbol` constructors rather than reader quote
+syntax. The owning component accessor and existing assertions use the new
+calls; their expected bytes and table entries are unchanged.
 The old CLJK generator and generated sibling are removed. Existing host test
 sources remain migration input, not native Q9/CDCI evidence.
 
-This is an unqualified source migration candidate. The current native
-frontend requires a function and rejects constants in namespace exports;
-the native project linker imports functions only. Preserving this module's
-two public values therefore still needs explicit library/value-interface
-support or a complete accessor/caller migration. A dummy function would not
-resolve that interface. The embedded candidate was rendered mechanically
+This is an unqualified source migration candidate. Real accessors follow
+the native public-function contract without relaxing its export/entrypoint
+checks. Importing the typed file-map accessor also needs closed typed-map
+signature support in the native project analyzer; analysis interfaces do
+not establish executable linkage. The embedded candidate was rendered mechanically
 from the authoritative WIT; the Kotoba generator has not executed yet.
 Native compiler admission, selfhost-built generation/check execution and
-Definition CID equivalence receipts are required before release
+Definition CID accounting (including this value-to-accessor API migration)
+and literal equivalence receipts are required before release
 qualification. No JVM/Node/NBB/KBB/C fallback qualifies it.
 
 Each consumer pins an ABI release and may generate language bindings from WIT.
